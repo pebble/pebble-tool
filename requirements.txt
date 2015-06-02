@@ -1,0 +1,7 @@
+git+ssh://git@github.com/pebble/kb-libpebble2.git@5ddd876
+backports.ssl-match-hostname==3.4.0.2
+enum34==1.0.4
+six==1.9.0
+websocket-client==0.31.0
+wsgiref==0.1.2
+progressbar2==2.7.3
