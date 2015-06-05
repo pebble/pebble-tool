@@ -3,7 +3,7 @@ __author__ = 'katharine'
 import argparse
 
 from .commands.base import register_children
-from .commands import repl, install
+from .commands import repl, install, screenshot
 from .exceptions import ToolError
 
 
