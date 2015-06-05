@@ -3,7 +3,7 @@ __author__ = 'katharine'
 
 from datetime import datetime
 
-from libpebble2.protocol.system import AppLogMessage, AppLogShippingControl
+from libpebble2.protocol.logs import AppLogMessage, AppLogShippingControl
 from libpebble2.communication.transports.websocket import MessageTargetPhone
 from libpebble2.communication.transports.websocket.protocol import WebSocketPhoneAppLog
 

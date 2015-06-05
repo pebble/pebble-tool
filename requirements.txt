@@ -1,4 +1,4 @@
-git+ssh://git@github.com/pebble/kb-libpebble2.git@5ddd876
+git+ssh://git@github.com/pebble/libpebble2.git@3867f8e
 backports.ssl-match-hostname==3.4.0.2
 enum34==1.0.4
 six==1.9.0
