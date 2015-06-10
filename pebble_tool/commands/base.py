@@ -74,7 +74,7 @@ class BaseCommand(object):
         if len(parts) == 2:
             port = int(parts[1])
         else:
-            port = 9000
+            port = 12344
         connection = PebbleConnection(QemuTransport(ip, port), ThreadedEventHandler)
         connection.connect()
         self._pump_connection(connection)
