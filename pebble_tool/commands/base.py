@@ -2,12 +2,10 @@ __author__ = 'katharine'
 
 import argparse
 import os
-import threading
 
 from libpebble2.communication import PebbleConnection
 from libpebble2.communication.transports.qemu import QemuTransport
 from libpebble2.communication.transports.websocket import WebsocketTransport
-from libpebble2.events.threaded import ThreadedEventHandler
 
 from pebble_tool.exceptions import ToolError
 
@@ -61,9 +59,11 @@ class BaseCommand(object):
             port = int(parts[1])
         else:
             port = 9000
-        connection = PebbleConnection(WebsocketTransport("ws://{}:{}/".format(ip, port)), ThreadedEventHandler)
+        connection = PebbleConnection(WebsocketTransport("ws://{}:{}/".format(ip, port)))
+        print ip, port
         connection.connect()
-        self._pump_connection(connection)
+        print 'yay'
+        connection.run_async()
         return connection
 
     def _connect_qemu(self, qemu):
@@ -75,18 +75,10 @@ class BaseCommand(object):
             port = int(parts[1])
         else:
             port = 12344
-        connection = PebbleConnection(QemuTransport(ip, port), ThreadedEventHandler)
+        connection = PebbleConnection(QemuTransport(ip, port))
         connection.connect()
-        self._pump_connection(connection)
+        connection.run_async()
         return connection
-
-    def _pump_connection(self, connection):
-        def pump():
-            while True:
-                connection.pump_reader()
-        thread = threading.Thread(target=pump)
-        thread.daemon = True
-        thread.start()
 
 
 def register_children(parser):

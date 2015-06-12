@@ -1,12 +1,11 @@
 from __future__ import absolute_import, print_function
 __author__ = 'katharine'
 
-from progressbar import ProgressBar, Bar, ReverseBar, FileTransferSpeed, Timer, Percentage
+from progressbar import ProgressBar, Bar, FileTransferSpeed, Timer, Percentage
 import time
 
 from libpebble2.communication.transports.websocket import WebsocketTransport, MessageTargetPhone
 from libpebble2.communication.transports.websocket.protocol import WebSocketInstallBundle, WebSocketInstallStatus
-from libpebble2.events.threaded import ThreadedEventHandler
 from libpebble2.services.install import AppInstaller
 
 from .base import BaseCommand
@@ -36,7 +35,7 @@ class InstallCommand(BaseCommand):
                 pass
 
     def _install_via_serial(self, pebble, pbw):
-        installer = AppInstaller(pebble, ThreadedEventHandler, pbw)
+        installer = AppInstaller(pebble, pbw)
         self.progress_bar.maxval = installer.total_size
         self.progress_bar.start()
         installer.register_handler("progress", self._handle_pp_progress)

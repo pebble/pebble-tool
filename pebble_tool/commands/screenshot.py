@@ -8,7 +8,6 @@ from progressbar import ProgressBar, Bar, ReverseBar, FileTransferSpeed, Timer, 
 import subprocess
 import sys
 
-from libpebble2.events.threaded import ThreadedEventHandler
 from libpebble2.services.screenshot import Screenshot
 
 from .base import BaseCommand
@@ -24,7 +23,7 @@ class ScreenshotCommand(BaseCommand):
 
     def __call__(self, args):
         pebble = self._connect(args)
-        screenshot = Screenshot(pebble, ThreadedEventHandler)
+        screenshot = Screenshot(pebble)
         screenshot.register_handler("progress", self._handle_progress)
 
         self.progress_bar.start()
