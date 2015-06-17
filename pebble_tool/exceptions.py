@@ -7,3 +7,7 @@ class ToolError(Exception):
 
 class MissingSDK(ToolError):
     pass
+
+
+class MissingEmulatorError(MissingSDK):
+    pass

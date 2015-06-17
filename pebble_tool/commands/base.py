@@ -8,6 +8,8 @@ from libpebble2.communication.transports.qemu import QemuTransport
 from libpebble2.communication.transports.websocket import WebsocketTransport
 
 from pebble_tool.exceptions import ToolError
+from pebble_tool.sdk.emulator import ManagedEmulatorTransport
+from pebble_tool.util import get_persist_dir
 
 _CommandRegistry = []
 
@@ -35,6 +37,7 @@ class BaseCommand(object):
         parser.add_argument('--debug', action='store_true', help="Enable debugging output")
         parser.add_argument('--phone', help="When using the developer connection, your phone's IP or hostname.")
         parser.add_argument('--qemu', help="Use this option to connect directly to a QEMU instance.")
+        parser.add_argument('--emulator', type=str, help="Launch an emulator", choices=['aplite', 'basalt'])
         return [parser]
 
     def __call__(self, args):
@@ -45,6 +48,8 @@ class BaseCommand(object):
             return self._connect_phone(args.phone)
         elif args.qemu:
             return self._connect_qemu(args.qemu)
+        elif args.emulator:
+            return self._connect_emulator(args.emulator)
         else:
             if 'PEBBLE_PHONE' in os.environ:
                 return self._connect_phone(os.environ['PEBBLE_PHONE'])
@@ -76,6 +81,12 @@ class BaseCommand(object):
         else:
             port = 12344
         connection = PebbleConnection(QemuTransport(ip, port))
+        connection.connect()
+        connection.run_async()
+        return connection
+
+    def _connect_emulator(self, platform):
+        connection = PebbleConnection(ManagedEmulatorTransport(platform))
         connection.connect()
         connection.run_async()
         return connection
