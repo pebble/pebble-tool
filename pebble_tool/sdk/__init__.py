@@ -20,14 +20,17 @@ def sdk_version():
         from . import version
         return version.version_string
     except ImportError:
+        here = os.path.dirname(__file__)
         try:
-            return subprocess.check_output(["git", "describe"], stderr=subprocess.STDOUT).strip()
+            return subprocess.check_output(["git", "describe"], cwd=here, stderr=subprocess.STDOUT).strip()
         except subprocess.CalledProcessError as e:
             if e.returncode == 128:
-                return 'g{}'.format(subprocess.check_output(["git", "rev-parse", "--short", "HEAD"],
-                                                            stderr=subprocess.STDOUT)).strip()
-            else:
-                return 'unknown'
+                try:
+                    return 'g{}'.format(subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=here,
+                                                                stderr=subprocess.STDOUT)).strip()
+                except subprocess.CalledProcessError as e:
+                    pass
+            return 'unknown'
 
 def get_sdk_persist_dir(platform):
     dir = os.path.join(get_persist_dir(), sdk_version(), platform)
