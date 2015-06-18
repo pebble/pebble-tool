@@ -141,8 +141,7 @@ class ManagedEmulatorTransport(WebsocketTransport):
         while True:
             received += s.recv(256)
             # PBL-21275: we'll add less hacky solutions for this to the firmware.
-            if ((self.platform == "basalt" and "<SDK Home>" in received) or
-                    (self.platform == "aplite" and "<Launcher>" in received)):
+            if "<SDK Home>" in received or "<Launcher>" in received:
                 break
         s.close()
 
