@@ -39,6 +39,14 @@ class ManagedEmulatorTransport(WebsocketTransport):
 
     def connect(self):
         self._spawn_processes()
+        for i in xrange(10):
+            time.sleep(0.5)
+            try:
+                super(ManagedEmulatorTransport, self).connect()
+            except socket.error:
+                continue
+            else:
+                return
         super(ManagedEmulatorTransport, self).connect()
 
     def _find_ports(self):
