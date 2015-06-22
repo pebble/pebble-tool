@@ -53,5 +53,5 @@ class ScreenshotCommand(BaseCommand):
     @classmethod
     def add_parser(cls, parser):
         parser = super(ScreenshotCommand, cls).add_parser(parser)
-        parser.add_argument('--filename', type=str, help="Filename of screenshot")
+        parser.add_argument('filename', nargs='?', type=str, help="Filename of screenshot")
         return parser
