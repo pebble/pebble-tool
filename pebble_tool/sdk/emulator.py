@@ -14,6 +14,7 @@ import time
 
 from libpebble2.communication.transports.websocket import WebsocketTransport
 
+from pebble_tool.account import get_default_account
 from pebble_tool.exceptions import MissingEmulatorError
 from . import sdk_path, get_sdk_persist_dir
 
@@ -186,6 +187,11 @@ class ManagedEmulatorTransport(WebsocketTransport):
             '--debug',
         ]
 
+        account = get_default_account()
+        if account.is_logged_in:
+            command.extend(['--oauth', account.bearer_token])
+
+        print command
         process = subprocess.Popen(command, stdout=black_hole, stderr=black_hole)
         time.sleep(0.5)
         if process.poll() is not None:

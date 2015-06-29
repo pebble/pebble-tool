@@ -4,7 +4,7 @@ import argparse
 import logging
 
 from .commands.base import register_children
-from .commands import repl, install, screenshot, logs
+from .commands import repl, install, screenshot, logs, account
 from .commands.sdk import build, emulator
 from .exceptions import ToolError
 
