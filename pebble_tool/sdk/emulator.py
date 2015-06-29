@@ -3,6 +3,7 @@ __author__ = 'katharine'
 
 import errno
 import json
+import logging
 import os
 import os.path
 import platform
@@ -15,9 +16,10 @@ import time
 from libpebble2.communication.transports.websocket import WebsocketTransport
 
 from pebble_tool.account import get_default_account
-from pebble_tool.exceptions import MissingEmulatorError
+from pebble_tool.exceptions import MissingEmulatorError, ToolError
 from . import sdk_path, get_sdk_persist_dir
 
+logger = logging.getLogger("pebble_tool.sdk.emulator")
 black_hole = open(os.devnull, 'w')
 
 def get_emulator_info_path(platform):
@@ -78,10 +80,16 @@ class ManagedEmulatorTransport(WebsocketTransport):
 
     def _spawn_processes(self):
         if self.qemu_pid is None:
+            logger.info("Spawning QEMU.")
             self._spawn_qemu()
+        else:
+            logger.info("QEMU is already running.")
 
         if self.pypkjs_pid is None:
+            logger.info("Spawning pypkjs.")
             self._spawn_pypkjs()
+        else:
+            logger.info("pypkjs is already running.")
 
         self._save_state()
 
@@ -134,8 +142,9 @@ class ManagedEmulatorTransport(WebsocketTransport):
         }
 
         command.extend(platform_args[self.platform])
-        process = subprocess.Popen(command, stdout=black_hole, stderr=black_hole)
-        time.sleep(0.5)
+        logger.info("Qemu command: %s", subprocess.list2cmdline(command))
+        process = subprocess.Popen(command, stdout=self._get_output(), stderr=self._get_output())
+        time.sleep(0.2)
         if process.poll() is not None:
             try:
                 subprocess.check_output(command, stderr=subprocess.STDOUT)
@@ -145,7 +154,18 @@ class ManagedEmulatorTransport(WebsocketTransport):
         self._wait_for_qemu()
 
     def _wait_for_qemu(self):
-        s = socket.create_connection(('localhost', self.qemu_serial_port))
+        logger.info("Waiting for the firmware to boot.")
+        for i in xrange(20):
+            time.sleep(0.2)
+            try:
+                s = socket.create_connection(('localhost', self.qemu_serial_port))
+            except socket.error:
+                logger.debug("QEMU not ready yet.")
+                pass
+            else:
+                break
+        else:
+            raise ToolError("Emulator launch timed out.")
         received = ''
         while True:
             received += s.recv(256)
@@ -153,6 +173,7 @@ class ManagedEmulatorTransport(WebsocketTransport):
             if "<SDK Home>" in received or "<Launcher>" in received:
                 break
         s.close()
+        logger.info("Firmware booted.")
 
     def _copy_spi_image(self, path):
         sdk_qemu_spi_flash = os.path.join(sdk_path(), 'Pebble', self.platform, 'qemu', 'qemu_spi_flash.bin')
@@ -190,9 +211,10 @@ class ManagedEmulatorTransport(WebsocketTransport):
         account = get_default_account()
         if account.is_logged_in:
             command.extend(['--oauth', account.bearer_token])
-
-        print command
-        process = subprocess.Popen(command, stdout=black_hole, stderr=black_hole)
+        if logger.getEffectiveLevel() <= logging.DEBUG:
+            command.append('--debug')
+        logger.info("pypkjs command: %s", subprocess.list2cmdline(command))
+        process = subprocess.Popen(command, stdout=self._get_output(), stderr=self._get_output())
         time.sleep(0.5)
         if process.poll() is not None:
             try:
@@ -200,6 +222,12 @@ class ManagedEmulatorTransport(WebsocketTransport):
             except subprocess.CalledProcessError as e:
                 raise MissingEmulatorError("Couldn't launch pypkjs:\n{}".format(e.output.strip()))
         self.pypkjs_pid = process.pid
+
+    def _get_output(self):
+        if logger.getEffectiveLevel() <= logging.DEBUG:
+            return None
+        else:
+            return black_hole
 
     @property
     def _pid_filename(self):
