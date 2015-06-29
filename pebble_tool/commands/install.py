@@ -21,6 +21,7 @@ class InstallCommand(BaseCommand):
                                                  FileTransferSpeed(), ' ', Timer(format='%s')])
 
     def __call__(self, args):
+        super(InstallCommand, self).__call__(args)
         pebble = self._connect(args)
         if isinstance(pebble.transport, WebsocketTransport):
             self._install_via_websocket(pebble, args.pbw)

@@ -13,6 +13,7 @@ class KillCommand(BaseCommand):
     command = 'kill'
 
     def __call__(self, args):
+        super(KillCommand, self).__call__(args)
         if args.force:
             s = signal.SIGKILL
         else:

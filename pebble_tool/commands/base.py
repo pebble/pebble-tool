@@ -1,6 +1,7 @@
 __author__ = 'katharine'
 
 import argparse
+import logging
 import os
 
 from libpebble2.communication import PebbleConnection
@@ -34,16 +35,28 @@ class BaseCommand(object):
     @classmethod
     def _shared_parser(cls):
         parser = argparse.ArgumentParser(add_help=False)
-        parser.add_argument('--debug', action='store_true', help="Enable debugging output")
+        parser.add_argument('-v', action='count', help="Degree of verbosity (use more v for more verbosity)")
         parser.add_argument('--phone', help="When using the developer connection, your phone's IP or hostname.")
         parser.add_argument('--qemu', help="Use this option to connect directly to a QEMU instance.")
         parser.add_argument('--emulator', type=str, help="Launch an emulator", choices=['aplite', 'basalt'])
         return [parser]
 
     def __call__(self, args):
-        raise NotImplementedError
+        self._set_debugging(args.v)
+
+    def _set_debugging(self, level):
+        self._verbosity = level
+        if level is not None:
+            if level == 1:
+                verbosity = logging.INFO
+            elif level >= 2:
+                verbosity = logging.DEBUG
+            else:
+                verbosity = logging.WARNING
+            logging.getLogger().setLevel(verbosity)
 
     def _connect(self, args):
+        self._set_debugging(args.v)
         if args.phone:
             return self._connect_phone(args.phone)
         elif args.qemu:
@@ -64,10 +77,8 @@ class BaseCommand(object):
             port = int(parts[1])
         else:
             port = 9000
-        connection = PebbleConnection(WebsocketTransport("ws://{}:{}/".format(ip, port)))
-        print ip, port
+        connection = PebbleConnection(WebsocketTransport("ws://{}:{}/".format(ip, port)), **self._get_debug_args())
         connection.connect()
-        print 'yay'
         connection.run_async()
         return connection
 
@@ -80,16 +91,24 @@ class BaseCommand(object):
             port = int(parts[1])
         else:
             port = 12344
-        connection = PebbleConnection(QemuTransport(ip, port))
+        connection = PebbleConnection(QemuTransport(ip, port), **self._get_debug_args())
         connection.connect()
         connection.run_async()
         return connection
 
     def _connect_emulator(self, platform):
-        connection = PebbleConnection(ManagedEmulatorTransport(platform))
+        connection = PebbleConnection(ManagedEmulatorTransport(platform), **self._get_debug_args())
         connection.connect()
         connection.run_async()
         return connection
+
+    def _get_debug_args(self):
+        args = {}
+        if self._verbosity >= 3:
+            args['log_packet_level'] = logging.DEBUG
+        if self._verbosity >= 4:
+            args['log_protocol_level'] = logging.DEBUG
+        return args
 
 
 def register_children(parser):

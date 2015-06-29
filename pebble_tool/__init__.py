@@ -1,6 +1,7 @@
 __author__ = 'katharine'
 
 import argparse
+import logging
 
 from .commands.base import register_children
 from .commands import repl, install, screenshot
@@ -9,6 +10,7 @@ from .exceptions import ToolError
 
 
 def run_tool(args=None):
+    logging.basicConfig()
     parser = argparse.ArgumentParser()
     register_children(parser)
     args = parser.parse_args(args)

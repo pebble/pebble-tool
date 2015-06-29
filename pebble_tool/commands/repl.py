@@ -14,6 +14,7 @@ class ReplCommand(BaseCommand):
     command = 'repl'
 
     def __call__(self, args):
+        super(ReplCommand, self).__call__(args)
         pebble = self._connect(args)
         repl_env = {
             'pebble': pebble,

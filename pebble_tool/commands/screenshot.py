@@ -22,6 +22,7 @@ class ScreenshotCommand(BaseCommand):
         self.started = False
 
     def __call__(self, args):
+        super(ScreenshotCommand, self).__call__(args)
         pebble = self._connect(args)
         screenshot = Screenshot(pebble)
         screenshot.register_handler("progress", self._handle_progress)
