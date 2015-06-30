@@ -1,11 +1,13 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 __author__ = 'katharine'
 
 import os
 import subprocess
 
-from pebble_tool.exceptions import ToolError
-from pebble_tool.exceptions import MissingSDK
+from pebble_tool.exceptions import (ToolError, MissingSDK, PebbleProjectException, InvalidJSONException,
+                                    InvalidProjectException, OutdatedProjectException)
+from pebble_tool.sdk.project import PebbleProject
+from pebble_tool.util.analytics import post_event
 from ..base import BaseCommand
 
 
@@ -53,4 +55,15 @@ class SDKCommand(BaseCommand):
 
     def __call__(self, args):
         super(SDKCommand, self).__call__(args)
+        try:
+            self.project = PebbleProject()
+        except PebbleProjectException as e:
+            event_map = {
+                InvalidProjectException: "sdk_run_without_project",
+                InvalidJSONException: "sdk_json_error",
+                OutdatedProjectException: "sdk_json_error",
+            }
+            if type(e) in event_map:
+                post_event(event_map[type(e)])
+            raise
         self.add_arm_tools_to_path()

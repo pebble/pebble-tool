@@ -7,21 +7,7 @@ import uuid
 
 SDK_VERSION = "3"
 
-
-class PebbleProjectException(Exception):
-    pass
-
-
-class InvalidProjectException(PebbleProjectException):
-    pass
-
-
-class InvalidJSONException(PebbleProjectException):
-    pass
-
-
-class OutdatedProjectException(PebbleProjectException):
-    pass
+from pebble_tool.exceptions import InvalidProjectException, InvalidJSONException, OutdatedProjectException
 
 
 class PebbleProject(object):
@@ -38,7 +24,7 @@ class PebbleProject(object):
         """
 
         if not os.path.isdir(os.path.join(project_dir, 'src')):
-            raise InvalidProjectException
+            raise InvalidProjectException("This is not a project directory.")
 
         try:
             with open(os.path.join(project_dir, "appinfo.json"), "r") as f:
@@ -54,7 +40,7 @@ class PebbleProject(object):
                 or not os.path.exists(os.path.join(project_dir, 'wscript')) \
                 or not 'sdkVersion' in app_info.keys() \
                 or app_info.get("sdkVersion", None) != SDK_VERSION:
-            raise OutdatedProjectException()
+            raise OutdatedProjectException("This project is outdated (try 'pebble convert').")
 
     def _parse_project(self):
         with open(os.path.join(self.project_dir, 'appinfo.json')) as f:
