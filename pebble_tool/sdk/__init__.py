@@ -7,6 +7,8 @@ import subprocess
 from pebble_tool.exceptions import MissingSDK
 from pebble_tool.util import get_persist_dir
 
+pebble_platforms = ('aplite', 'basalt')
+
 
 def sdk_path():
     path = os.getenv('PEBBLE_SDK_PATH', None) or os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -31,6 +33,7 @@ def sdk_version():
                 except subprocess.CalledProcessError as e:
                     pass
             return 'unknown'
+
 
 def get_sdk_persist_dir(platform):
     dir = os.path.join(get_persist_dir(), sdk_version(), platform)

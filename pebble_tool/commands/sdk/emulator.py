@@ -3,9 +3,11 @@ __author__ = 'katharine'
 
 import errno
 import os
+import shutil
 import signal
 
 from ..base import BaseCommand
+from pebble_tool.sdk import get_sdk_persist_dir, get_persist_dir, pebble_platforms
 import pebble_tool.sdk.emulator as emulator
 
 
@@ -18,7 +20,7 @@ class KillCommand(BaseCommand):
             s = signal.SIGKILL
         else:
             s = signal.SIGTERM
-        for platform in ('aplite', 'basalt'):
+        for platform in pebble_platforms:
             info = emulator.get_emulator_info(platform)
             if info is not None:
                 self._kill_if_running(info['qemu']['pid'], s)
@@ -37,3 +39,21 @@ class KillCommand(BaseCommand):
         parser = super(KillCommand, cls).add_parser(parser)
         parser.add_argument('--force', action='store_true', help="Send the processes SIGKILL")
         return parser
+
+
+class WipeCommand(BaseCommand):
+    command = 'wipe'
+
+    def __call__(self, args):
+        super(WipeCommand, self).__call__(args)
+        if args.everything:
+            shutil.rmtree(get_persist_dir())
+        else:
+            for platform in pebble_platforms:
+                shutil.rmtree(get_sdk_persist_dir(platform))
+
+    @classmethod
+    def add_parser(cls, parser):
+        parser = super(WipeCommand, cls).add_parser(parser)
+        parser.add_argument('--everything', action='store_true',
+                            help="Deletes all data from all versions. Also logs you out.")
