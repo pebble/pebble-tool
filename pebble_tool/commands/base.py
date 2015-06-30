@@ -10,7 +10,7 @@ from libpebble2.communication.transports.websocket import WebsocketTransport
 
 from pebble_tool.exceptions import ToolError
 from pebble_tool.sdk.emulator import ManagedEmulatorTransport
-from pebble_tool.util import get_persist_dir
+from pebble_tool.sdk.cloudpebble import CloudPebbleTransport
 
 _CommandRegistry = []
 
@@ -38,6 +38,8 @@ class BaseCommand(object):
         parser.add_argument('-v', action='count', help="Degree of verbosity (use more v for more verbosity)")
         parser.add_argument('--phone', help="When using the developer connection, your phone's IP or hostname.")
         parser.add_argument('--qemu', help="Use this option to connect directly to a QEMU instance.")
+        parser.add_argument('--cloudpebble', action='store_true', help="Use this option to connect to your phonevia the "
+                                                  "CloudPebble connection.")
         parser.add_argument('--emulator', type=str, help="Launch an emulator", choices=['aplite', 'basalt'])
         return [parser]
 
@@ -63,6 +65,8 @@ class BaseCommand(object):
             return self._connect_qemu(args.qemu)
         elif args.emulator:
             return self._connect_emulator(args.emulator)
+        elif args.cloudpebble:
+            return self._connect_cloudpebble()
         else:
             if 'PEBBLE_PHONE' in os.environ:
                 return self._connect_phone(os.environ['PEBBLE_PHONE'])
@@ -98,6 +102,12 @@ class BaseCommand(object):
 
     def _connect_emulator(self, platform):
         connection = PebbleConnection(ManagedEmulatorTransport(platform), **self._get_debug_args())
+        connection.connect()
+        connection.run_async()
+        return connection
+
+    def _connect_cloudpebble(self):
+        connection = PebbleConnection(CloudPebbleTransport())
         connection.connect()
         connection.run_async()
         return connection

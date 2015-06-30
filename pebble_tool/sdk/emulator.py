@@ -34,9 +34,8 @@ def get_emulator_info(platform):
 
 
 class ManagedEmulatorTransport(WebsocketTransport):
-    def __init__(self, platform, oauth=None):
+    def __init__(self, platform):
         self.platform = platform
-        self.oauth = oauth
         self._find_ports()
         super(ManagedEmulatorTransport, self).__init__('ws://localhost:{}/'.format(self.pypkjs_port))
 
