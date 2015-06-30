@@ -1,6 +1,8 @@
 from __future__ import absolute_import, print_function
 __author__ = 'katharine'
 
+import os
+import os.path
 from progressbar import ProgressBar, Bar, FileTransferSpeed, Timer, Percentage
 import time
 
@@ -22,11 +24,19 @@ class InstallCommand(BaseCommand):
 
     def __call__(self, args):
         super(InstallCommand, self).__call__(args)
+        pbw = args.pbw or 'build/{}.pbw'.format(os.path.basename(os.getcwd()))
         pebble = self._connect(args)
-        if isinstance(pebble.transport, WebsocketTransport):
-            self._install_via_websocket(pebble, args.pbw)
-        else:
-            self._install_via_serial(pebble, args.pbw)
+        try:
+            if isinstance(pebble.transport, WebsocketTransport):
+                self._install_via_websocket(pebble, pbw)
+            else:
+                self._install_via_serial(pebble, pbw)
+        except IOError as e:
+            if args.pbw is None:
+                raise ToolError("You must either run this command from a project directory or specify the pbw "
+                                "to install.")
+            else:
+                raise ToolError(str(e))
         if args.logs:
             PebbleLogPrinter(pebble)
             try:
@@ -59,6 +69,6 @@ class InstallCommand(BaseCommand):
     @classmethod
     def add_parser(cls, parser):
         parser = super(InstallCommand, cls).add_parser(parser)
-        parser.add_argument('pbw', help="Path to app to install.")
+        parser.add_argument('pbw', help="Path to app to install.", nargs='?', default=None)
         parser.add_argument('--logs', action="store_true", help="Enable logs")
         return parser
