@@ -9,6 +9,8 @@ from pebble_tool.util import get_persist_dir
 
 pebble_platforms = ('aplite', 'basalt')
 
+SDK_VERSION = '3'
+
 
 def sdk_path():
     path = os.getenv('PEBBLE_SDK_PATH', None) or os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..'))
