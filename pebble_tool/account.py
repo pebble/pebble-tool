@@ -76,6 +76,10 @@ class Account(object):
     def legacy_id(self):
         return self._get_user_info()['legacy_id']
 
+    @property
+    def _user_info_path(self):
+        return os.path.join(self.persistent_dir, 'user_info')
+
     # hack to fix null token expiration
     def _set_expiration_to_long_time(self, creds):
         cred_str = creds.to_json()
@@ -93,6 +97,10 @@ class Account(object):
         self.storage.put(creds)
         self.user_info = self._get_user_info()
 
+    def logout(self):
+        self.storage.delete()
+        os.unlink(self._user_info_path)
+
     def _get_user_info(self):
         if self._user_info is not None:
             return self._user_info
@@ -100,7 +108,7 @@ class Account(object):
         if not self.is_logged_in:
             return None
 
-        file_path = os.path.join(self.persistent_dir, 'user_info')
+        file_path = self._user_info_path
         try:
             with open(file_path) as f:
                 return json.load(f)
