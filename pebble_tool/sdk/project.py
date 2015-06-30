@@ -40,7 +40,7 @@ class PebbleProject(object):
                 or not os.path.exists(os.path.join(project_dir, 'wscript')) \
                 or not 'sdkVersion' in app_info.keys() \
                 or app_info.get("sdkVersion", None) != SDK_VERSION:
-            raise OutdatedProjectException("This project is outdated (try 'pebble convert').")
+            raise OutdatedProjectException("This project is outdated (try 'pebble convert-project').")
 
     def _parse_project(self):
         with open(os.path.join(self.project_dir, 'appinfo.json')) as f:
