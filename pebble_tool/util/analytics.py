@@ -61,8 +61,8 @@ class PebbleAnalytics(object):
         fields = {
             'json': json.dumps(td_obj)
         }
-        logger.info("Posting analytics data: {}".format(analytics))
-        # requests.post(self.TD_SERVER, data=fields)
+        logger.debug("Posting analytics data: {}".format(analytics))
+        requests.post(self.TD_SERVER, data=fields)
 
     def _should_track(self):
         # Should we track analytics?
