@@ -7,11 +7,11 @@ from .base import BaseCommand
 from pebble_tool.util.logs import PebbleLogPrinter
 
 
-class ReplCommand(BaseCommand):
+class LogsCommand(BaseCommand):
     command = 'logs'
 
     def __call__(self, args):
-        super(ReplCommand, self).__call__(args)
+        super(LogsCommand, self).__call__(args)
         pebble = self._connect(args)
         PebbleLogPrinter(pebble)
         try:
