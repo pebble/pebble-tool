@@ -109,7 +109,7 @@ class BaseCommand(object):
         return connection
 
     def _connect_cloudpebble(self):
-        connection = PebbleConnection(CloudPebbleTransport())
+        connection = PebbleConnection(CloudPebbleTransport(), **self._get_debug_args())
         connection.connect()
         connection.run_async()
         return connection

@@ -44,5 +44,5 @@ def get_sdk_persist_dir(platform):
     return dir
 
 
-def add_arm_tools_to_path(self, args):
-    os.environ['PATH'] += ":{}".format(os.path.join(self.sdk_path(args), "arm-cs-tools", "bin"))
+def get_arm_tools_path():
+    return os.path.join(sdk_path(), "arm-cs-tools", "bin")

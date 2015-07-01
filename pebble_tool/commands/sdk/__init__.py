@@ -6,6 +6,7 @@ import subprocess
 
 from pebble_tool.exceptions import (ToolError, MissingSDK, PebbleProjectException, InvalidJSONException,
                                     InvalidProjectException, OutdatedProjectException)
+from pebble_tool.sdk import get_arm_tools_path
 from pebble_tool.sdk.project import PebbleProject
 from pebble_tool.util.analytics import post_event
 from ..base import BaseCommand
@@ -26,7 +27,7 @@ class SDKCommand(BaseCommand):
         return os.path.join(self.get_sdk_path(), 'Pebble', 'waf')
 
     def add_arm_tools_to_path(self):
-        os.environ['PATH'] += ":{}".format(os.path.join(self.get_sdk_path(), "arm-cs-tools", "bin"))
+        os.environ['PATH'] += ":{}".format(get_arm_tools_path())
 
     def _fix_python(self):
         # First figure out what 'python' means:
