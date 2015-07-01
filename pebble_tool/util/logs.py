@@ -61,9 +61,9 @@ class PebbleLogPrinter(object):
     def _handle_crash(self, process, pc, lr):
         platform = self.pebble.watch_platform
         if platform == 'unknown':
-            app_elf_path = 'build/pebble-app.elf'
+            app_elf_path = "build/pebble-{}.elf".format(process)
         else:
-            app_elf_path = "build/{}/pebble-app.elf".format(platform)
+            app_elf_path = "build/{}/pebble-{}.elf".format(platform, process)
 
         if not os.path.exists(app_elf_path):
             print("Could not look up debugging symbols.")
