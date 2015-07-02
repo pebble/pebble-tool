@@ -7,6 +7,7 @@ from . import SDK_VERSION
 FILE_GITIGNORE = """
 # Ignore build generated files
 build
+
 # Ignore waf lock file
 .lock-waf*
 """
@@ -17,23 +18,31 @@ FILE_WSCRIPT = """
 #
 # Feel free to customize this to your needs.
 #
+
 import os.path
+
 top = '.'
 out = 'build'
+
 def options(ctx):
     ctx.load('pebble_sdk')
+
 def configure(ctx):
     ctx.load('pebble_sdk')
+
 def build(ctx):
     ctx.load('pebble_sdk')
+
     build_worker = os.path.exists('worker_src')
     binaries = []
+
     for p in ctx.env.TARGET_PLATFORMS:
         ctx.set_env(ctx.all_envs[p])
         ctx.set_group(ctx.env.PLATFORM_NAME)
         app_elf='{}/pebble-app.elf'.format(ctx.env.BUILD_DIR)
         ctx.pbl_program(source=ctx.path.ant_glob('src/**/*.c'),
         target=app_elf)
+
         if build_worker:
             worker_elf='{}/pebble-worker.elf'.format(ctx.env.BUILD_DIR)
             binaries.append({'platform': p, 'app_elf': app_elf, 'worker_elf': worker_elf})
@@ -41,8 +50,9 @@ def build(ctx):
             target=worker_elf)
         else:
             binaries.append({'platform': p, 'app_elf': app_elf})
+
     ctx.set_group('bundle')
-    ctx.pbl_bundle(binaries=binaries, js=ctx.path.ant_glob('src/js/**/*.js'))
+    ctx.pbl_bundle(binaries=binaries, js=ctx.path.ant_glob('src/js/**/*.js'))    ctx.pbl_bundle(binaries=binaries, js=ctx.path.ant_glob('src/js/**/*.js'))
 """
 
 FILE_WSCRIPT_LEGACY2 = """
@@ -51,17 +61,24 @@ FILE_WSCRIPT_LEGACY2 = """
 #
 # Feel free to customize this to your needs.
 #
+
 import os.path
+
 top = '.'
 out = 'build'
+
 def options(ctx):
     ctx.load('pebble_sdk')
+
 def configure(ctx):
     ctx.load('pebble_sdk')
+
 def build(ctx):
     ctx.load('pebble_sdk')
+
     ctx.pbl_program(source=ctx.path.ant_glob('src/**/*.c'),
                     target='pebble-app.elf')
+
     if os.path.exists('worker_src'):
         ctx.pbl_worker(source=ctx.path.ant_glob('worker_src/**/*.c'),
                         target='pebble-worker.elf')
@@ -74,45 +91,56 @@ def build(ctx):
 """
 
 FILE_SIMPLE_MAIN = """#include <pebble.h>
+
 int main(void) {
   app_event_loop();
 }
 """
 
 FILE_DUMMY_WORKER = """#include <pebble_worker.h>
+
 int main(void) {
   worker_event_loop();
 }
 """
 
 FILE_DUMMY_MAIN = """#include <pebble.h>
+
 static Window *window;
 static TextLayer *text_layer;
+
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
   text_layer_set_text(text_layer, "Select");
 }
+
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
   text_layer_set_text(text_layer, "Up");
 }
+
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
   text_layer_set_text(text_layer, "Down");
 }
+
 static void click_config_provider(void *context) {
   window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
   window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
   window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
 }
+
 static void window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
+
   text_layer = text_layer_create((GRect) { .origin = { 0, 72 }, .size = { bounds.size.w, 20 } });
   text_layer_set_text(text_layer, "Press a button");
   text_layer_set_text_alignment(text_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(text_layer));
 }
+
 static void window_unload(Window *window) {
   text_layer_destroy(text_layer);
 }
+
 static void init(void) {
   window = window_create();
   window_set_click_config_provider(window, click_config_provider);
@@ -123,12 +151,16 @@ static void init(void) {
   const bool animated = true;
   window_stack_push(window, animated);
 }
+
 static void deinit(void) {
   window_destroy(window);
 }
+
 int main(void) {
   init();
+
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Done initializing, pushed window: %p", window);
+
   app_event_loop();
   deinit();
 }
