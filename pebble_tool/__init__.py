@@ -6,8 +6,9 @@ import logging
 import sys
 
 from .commands.base import register_children
-from .commands import repl, install, screenshot, logs, account, timeline
-from .commands.sdk import build, emulator, create, convert
+from .commands.sdk import build, create
+from .commands import install, logs, screenshot, timeline, account, repl
+from .commands.sdk import convert, emulator
 from .exceptions import ToolError
 from .sdk import sdk_version
 
