@@ -7,6 +7,7 @@ import os
 import os.path
 import re
 import subprocess
+import time
 import uuid
 
 from libpebble2.protocol.logs import AppLogMessage, AppLogShippingControl
@@ -29,6 +30,15 @@ class PebbleLogPrinter(object):
         pebble.send_packet(AppLogShippingControl(enable=True))
         pebble.register_endpoint(AppLogMessage, self.handle_watch_log)
         pebble.register_transport_endpoint(MessageTargetPhone, WebSocketPhoneAppLog, self.handle_phone_log)
+
+    def wait(self):
+        try:
+            while self.pebble.connected:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            return
+        else:
+            print("Disconnected.")
 
     def handle_watch_log(self, packet):
         assert isinstance(packet, AppLogMessage)

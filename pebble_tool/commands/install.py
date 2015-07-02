@@ -38,12 +38,7 @@ class InstallCommand(PebbleCommand):
             else:
                 raise ToolError(str(e))
         if args.logs:
-            PebbleLogPrinter(self.pebble)
-            try:
-                while True:
-                    time.sleep(10)
-            except KeyboardInterrupt:
-                pass
+            PebbleLogPrinter(self.pebble).wait()
 
     def _install_via_serial(self, pebble, pbw):
         installer = AppInstaller(pebble, pbw)

@@ -8,6 +8,7 @@ import time
 from libpebble2.communication import PebbleConnection
 from libpebble2.communication.transports.qemu import QemuTransport
 from libpebble2.communication.transports.websocket import WebsocketTransport
+from libpebble2.exceptions import ConnectionError
 from libpebble2.protocol.system import TimeMessage, SetUTC
 
 from pebble_tool.exceptions import ToolError
@@ -70,7 +71,10 @@ class PebbleCommand(BaseCommand):
 
     def __call__(self, args):
         super(PebbleCommand, self).__call__(args)
-        self.pebble = self._connect(args)
+        try:
+            self.pebble = self._connect(args)
+        except ConnectionError as e:
+            raise ToolError(str(e))
 
     def _connect(self, args):
         self._set_debugging(args.v)
