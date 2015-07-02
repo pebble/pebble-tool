@@ -39,11 +39,6 @@ class BaseCommand(object):
     def _shared_parser(cls):
         parser = argparse.ArgumentParser(add_help=False)
         parser.add_argument('-v', action='count', help="Degree of verbosity (use more v for more verbosity)")
-        parser.add_argument('--phone', help="When using the developer connection, your phone's IP or hostname.")
-        parser.add_argument('--qemu', help="Use this option to connect directly to a QEMU instance.")
-        parser.add_argument('--cloudpebble', action='store_true', help="Use this option to connect to your phonevia the "
-                                                  "CloudPebble connection.")
-        parser.add_argument('--emulator', type=str, help="Launch an emulator", choices=['aplite', 'basalt'])
         return [parser]
 
     def __call__(self, args):
@@ -60,6 +55,22 @@ class BaseCommand(object):
             else:
                 verbosity = logging.WARNING
             logging.getLogger().setLevel(verbosity)
+
+
+class PebbleCommand(BaseCommand):
+    @classmethod
+    def _shared_parser(cls):
+        parser = argparse.ArgumentParser(add_help=False)
+        parser.add_argument('--phone', help="When using the developer connection, your phone's IP or hostname.")
+        parser.add_argument('--qemu', help="Use this option to connect directly to a QEMU instance.")
+        parser.add_argument('--cloudpebble', action='store_true', help="Use this option to connect to your phone via "
+                                                                       "the CloudPebble connection.")
+        parser.add_argument('--emulator', type=str, help="Launch an emulator", choices=['aplite', 'basalt'])
+        return super(PebbleCommand, cls)._shared_parser() + [parser]
+
+    def __call__(self, args):
+        super(PebbleCommand, self).__call__(args)
+        self.pebble = self._connect(args)
 
     def _connect(self, args):
         self._set_debugging(args.v)

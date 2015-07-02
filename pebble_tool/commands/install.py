@@ -10,12 +10,12 @@ from libpebble2.communication.transports.websocket import WebsocketTransport, Me
 from libpebble2.communication.transports.websocket.protocol import WebSocketInstallBundle, WebSocketInstallStatus
 from libpebble2.services.install import AppInstaller
 
-from .base import BaseCommand
+from .base import PebbleCommand
 from ..util.logs import PebbleLogPrinter
 from ..exceptions import ToolError
 
 
-class InstallCommand(BaseCommand):
+class InstallCommand(PebbleCommand):
     """Installs the given app on the watch."""
     command = 'install'
 
@@ -26,12 +26,11 @@ class InstallCommand(BaseCommand):
     def __call__(self, args):
         super(InstallCommand, self).__call__(args)
         pbw = args.pbw or 'build/{}.pbw'.format(os.path.basename(os.getcwd()))
-        pebble = self._connect(args)
         try:
-            if isinstance(pebble.transport, WebsocketTransport):
-                self._install_via_websocket(pebble, pbw)
+            if isinstance(self.pebble.transport, WebsocketTransport):
+                self._install_via_websocket(self.pebble, pbw)
             else:
-                self._install_via_serial(pebble, pbw)
+                self._install_via_serial(self.pebble, pbw)
         except IOError as e:
             if args.pbw is None:
                 raise ToolError("You must either run this command from a project directory or specify the pbw "
@@ -39,7 +38,7 @@ class InstallCommand(BaseCommand):
             else:
                 raise ToolError(str(e))
         if args.logs:
-            PebbleLogPrinter(pebble)
+            PebbleLogPrinter(self.pebble)
             try:
                 while True:
                     time.sleep(10)

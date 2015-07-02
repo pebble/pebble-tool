@@ -5,8 +5,7 @@ import os
 import subprocess
 import time
 
-from pebble_tool.exceptions import BuildError, PebbleProjectException
-from pebble_tool.sdk.project import PebbleProject
+from pebble_tool.exceptions import BuildError
 from pebble_tool.util.analytics import post_event
 from . import SDKCommand
 

@@ -10,10 +10,10 @@ import sys
 
 from libpebble2.services.screenshot import Screenshot
 
-from .base import BaseCommand
+from .base import PebbleCommand
 
 
-class ScreenshotCommand(BaseCommand):
+class ScreenshotCommand(PebbleCommand):
     """Takes a screenshot from the watch."""
     command = 'screenshot'
 
@@ -24,8 +24,7 @@ class ScreenshotCommand(BaseCommand):
 
     def __call__(self, args):
         super(ScreenshotCommand, self).__call__(args)
-        pebble = self._connect(args)
-        screenshot = Screenshot(pebble)
+        screenshot = Screenshot(self.pebble)
         screenshot.register_handler("progress", self._handle_progress)
 
         self.progress_bar.start()

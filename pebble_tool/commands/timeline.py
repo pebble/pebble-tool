@@ -10,19 +10,18 @@ from libpebble2.communication.transports.websocket import MessageTargetPhone, We
 from libpebble2.communication.transports.websocket.protocol import (WebSocketTimelinePin, InsertPin, DeletePin,
                                                                     WebSocketTimelineResponse)
 
-from .base import BaseCommand
+from .base import PebbleCommand
 from pebble_tool.exceptions import ToolError
 from pebble_tool.util.logs import PebbleLogPrinter
 
 
-class InsertPinCommand(BaseCommand):
+class InsertPinCommand(PebbleCommand):
     """Inserts a pin into the timeline."""
     command = 'insert-pin'
 
     def __call__(self, args):
         super(InsertPinCommand, self).__call__(args)
-        pebble = self._connect(args)
-        if not isinstance(pebble.transport, WebsocketTransport):
+        if not isinstance(self.pebble.transport, WebsocketTransport):
             raise ToolError("insert-pin only works when connected via websocket to a phone or emulator.")
 
         pin_id = args.id
@@ -52,10 +51,10 @@ class InsertPinCommand(BaseCommand):
         pin['source'] = 'sdk'
         pin['dataSource'] = 'sandbox-uuid:%s' % app_uuid
 
-        PebbleLogPrinter(pebble)
-        pebble.transport.send_packet(WebSocketTimelinePin(data=InsertPin(json=json.dumps(pin))),
-                                     target=MessageTargetPhone())
-        result = pebble.read_transport_message(MessageTargetPhone, WebSocketTimelineResponse).status
+        PebbleLogPrinter(self.pebble)
+        self.pebble.transport.send_packet(WebSocketTimelinePin(data=InsertPin(json=json.dumps(pin))),
+                                          target=MessageTargetPhone())
+        result = self.pebble.read_transport_message(MessageTargetPhone, WebSocketTimelineResponse).status
         if result != WebSocketTimelineResponse.Status.Succeeded:
             raise ToolError("Sending pin failed.")
 
@@ -69,18 +68,18 @@ class InsertPinCommand(BaseCommand):
         return parser
 
 
-class DeletePinCommand(BaseCommand):
+class DeletePinCommand(PebbleCommand):
     """Deletes a pin from the timeline."""
     command = 'delete-pin'
 
     def __call__(self, args):
         super(DeletePinCommand, self).__call__(args)
-        pebble = self._connect(args)
-        if not isinstance(pebble.transport, WebsocketTransport):
+        if not isinstance(self.pebble.transport, WebsocketTransport):
             raise ToolError("insert-pin only works when connected via websocket to a phone or emulator.")
 
         guid = _pin_id_to_uuid(args.id)
-        pebble.transport.send_packet(WebSocketTimelinePin(data=DeletePin(uuid=str(guid))), target=MessageTargetPhone())
+        self.pebble.transport.send_packet(WebSocketTimelinePin(data=DeletePin(uuid=str(guid))),
+                                          target=MessageTargetPhone())
 
 
     @classmethod
