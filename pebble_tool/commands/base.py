@@ -3,10 +3,12 @@ __author__ = 'katharine'
 import argparse
 import logging
 import os
+import time
 
 from libpebble2.communication import PebbleConnection
 from libpebble2.communication.transports.qemu import QemuTransport
 from libpebble2.communication.transports.websocket import WebsocketTransport
+from libpebble2.protocol.system import TimeMessage, SetUTC
 
 from pebble_tool.exceptions import ToolError
 from pebble_tool.sdk.emulator import ManagedEmulatorTransport
@@ -106,6 +108,13 @@ class BaseCommand(object):
         connection = PebbleConnection(ManagedEmulatorTransport(platform), **self._get_debug_args())
         connection.connect()
         connection.run_async()
+        # Make sure the timezone is set usefully.
+        if platform != "aplite":
+            ts = time.time()
+            tz_offset = -time.altzone if time.localtime(ts).tm_isdst and time.daylight else -time.altzone
+            tz_offset_minutes = tz_offset // 60
+            tz_name = "UTC%+d" % (tz_offset_minutes / 60)
+            connection.send_packet(TimeMessage(message=SetUTC(unix_time=ts, utc_offset=tz_offset_minutes, tz_name=tz_name)))
         return connection
 
     def _connect_cloudpebble(self):
