@@ -66,7 +66,7 @@ class PebbleLogPrinter(object):
         if crash_uuid != project.uuid:
             print("An app crashed, but it wasn't the active project.")
             return
-        self._handle_crash(result.group(2).lower(), result.group(3), result.group(4))
+        self._handle_crash(result.group(1).lower(), result.group(3), result.group(4))
 
     def _handle_crash(self, process, pc, lr):
         platform = self.pebble.watch_platform
