@@ -12,6 +12,7 @@ from pebble_tool.sdk.project import PebbleProject, OutdatedProjectException
 
 
 class PblProjectConverter(BaseCommand):
+    """Structurally converts an SDK 2 project to an SDK 3 project. Code changes may still be required."""
     command = 'convert-project'
 
     def __call__(self, args):

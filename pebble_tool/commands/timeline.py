@@ -16,6 +16,7 @@ from pebble_tool.util.logs import PebbleLogPrinter
 
 
 class InsertPinCommand(BaseCommand):
+    """Inserts a pin into the timeline."""
     command = 'insert-pin'
 
     def __call__(self, args):
@@ -69,6 +70,7 @@ class InsertPinCommand(BaseCommand):
 
 
 class DeletePinCommand(BaseCommand):
+    """Deletes a pin from the timeline."""
     command = 'delete-pin'
 
     def __call__(self, args):

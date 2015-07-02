@@ -16,6 +16,7 @@ from ..exceptions import ToolError
 
 
 class InstallCommand(BaseCommand):
+    """Installs the given app on the watch."""
     command = 'install'
 
     def __init__(self):

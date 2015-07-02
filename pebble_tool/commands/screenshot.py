@@ -14,6 +14,7 @@ from .base import BaseCommand
 
 
 class ScreenshotCommand(BaseCommand):
+    """Takes a screenshot from the watch."""
     command = 'screenshot'
 
     def __init__(self):

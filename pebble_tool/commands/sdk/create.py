@@ -12,6 +12,7 @@ from pebble_tool.util.analytics import post_event
 
 
 class NewProjectCommand(BaseCommand):
+    """Creates a new pebble project with the given name in a new directory."""
     command = 'new-project'
 
     def __call__(self, args):

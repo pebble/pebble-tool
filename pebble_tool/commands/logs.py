@@ -8,6 +8,7 @@ from pebble_tool.util.logs import PebbleLogPrinter
 
 
 class LogsCommand(BaseCommand):
+    """Displays running logs from the watch."""
     command = 'logs'
 
     def __call__(self, args):

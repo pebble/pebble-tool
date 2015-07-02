@@ -6,6 +6,7 @@ from pebble_tool.account import get_default_account
 
 
 class LogInCommand(BaseCommand):
+    """Logs you in to your Pebble account. Required to use the timeline and CloudPebble connections."""
     command = 'login'
 
     def __call__(self, args):
@@ -25,6 +26,7 @@ class LogInCommand(BaseCommand):
 
 
 class LogOutCommand(BaseCommand):
+    """Logs you out of your Pebble account."""
     command = 'logout'
 
     def __call__(self, args):

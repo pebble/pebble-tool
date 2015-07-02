@@ -11,6 +11,7 @@ from .base import BaseCommand
 
 
 class ReplCommand(BaseCommand):
+    """Launches a python prompt with a 'pebble' object already connected."""
     command = 'repl'
 
     def __call__(self, args):

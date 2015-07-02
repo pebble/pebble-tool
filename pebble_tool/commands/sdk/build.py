@@ -12,6 +12,7 @@ from . import SDKCommand
 
 
 class BuildCommand(SDKCommand):
+    """Builds the current project."""
     command = "build"
 
     def __call__(self, args):

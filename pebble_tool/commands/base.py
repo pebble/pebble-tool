@@ -29,7 +29,7 @@ class BaseCommand(object):
 
     @classmethod
     def add_parser(cls, parser):
-        parser = parser.add_parser(cls.command, parents=cls._shared_parser())
+        parser = parser.add_parser(cls.command, parents=cls._shared_parser(), help=cls.__doc__)
         parser.set_defaults(func=lambda x: cls()(x))
         return parser
 
@@ -124,6 +124,6 @@ class BaseCommand(object):
 
 
 def register_children(parser):
-    subparsers = parser.add_subparsers()
+    subparsers = parser.add_subparsers(title="Command")
     for command in _CommandRegistry:
         command.add_parser(subparsers)

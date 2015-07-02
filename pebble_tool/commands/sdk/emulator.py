@@ -12,6 +12,7 @@ import pebble_tool.sdk.emulator as emulator
 
 
 class KillCommand(BaseCommand):
+    """Kills running emulators, if any."""
     command = 'kill'
 
     def __call__(self, args):
@@ -42,6 +43,7 @@ class KillCommand(BaseCommand):
 
 
 class WipeCommand(BaseCommand):
+    """Wipes data for running emulators. By default, only clears data for the current SDK version."""
     command = 'wipe'
 
     def __call__(self, args):
