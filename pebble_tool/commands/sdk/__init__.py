@@ -6,7 +6,7 @@ import subprocess
 
 from pebble_tool.exceptions import (ToolError, MissingSDK, PebbleProjectException, InvalidJSONException,
                                     InvalidProjectException, OutdatedProjectException)
-from pebble_tool.sdk import get_arm_tools_path
+from pebble_tool.sdk import get_arm_tools_path, sdk_path
 from pebble_tool.sdk.project import PebbleProject
 from pebble_tool.util.analytics import post_event
 from ..base import BaseCommand
@@ -14,11 +14,8 @@ from ..base import BaseCommand
 
 class SDKCommand(BaseCommand):
     def get_sdk_path(self):
-        try:
-            path = os.environ['PEBBLE_SDK_PATH']
-        except KeyError:
-            path = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..'))
-        if not os.path.exists(path) or not os.path.exists(os.path.join(path, 'Pebble', 'waf')):
+        path = sdk_path()
+        if not os.path.exists(os.path.join(path, 'Pebble', 'waf')):
             raise MissingSDK("SDK unavailable; can't run this command.")
         return path
 
