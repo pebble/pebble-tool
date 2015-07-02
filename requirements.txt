@@ -7,3 +7,4 @@ wsgiref==0.1.2
 progressbar2==2.7.3
 pypng==0.0.17
 oauth2client==1.4.11
+requests==2.7.0

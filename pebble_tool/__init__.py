@@ -13,7 +13,7 @@ from .exceptions import ToolError
 
 def run_tool(args=None):
     logging.basicConfig()
-    parser = argparse.ArgumentParser(description="Pebble Tool")
+    parser = argparse.ArgumentParser(description="Pebble Tool", prog="pebble")
     register_children(parser)
     args = parser.parse_args(args)
     try:
