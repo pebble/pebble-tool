@@ -4,6 +4,7 @@ __author__ = 'katharine'
 import argparse
 import logging
 import sys
+import requests.packages.urllib3 as urllib3
 
 from .commands.base import register_children
 from .commands.sdk import build, create
@@ -14,6 +15,7 @@ from .sdk import sdk_version
 
 
 def run_tool(args=None):
+    urllib3.disable_warnings()  # sigh. :(
     logging.basicConfig()
     parser = argparse.ArgumentParser(description="Pebble Tool", prog="pebble")
     parser.add_argument("--version", action="version", version="Pebble SDK {}".format(sdk_version()))
