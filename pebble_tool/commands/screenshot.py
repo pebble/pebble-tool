@@ -32,7 +32,7 @@ class ScreenshotCommand(PebbleCommand):
         self.progress_bar.finish()
 
         filename = self._generate_filename() if args.filename is None else args.filename
-        png.from_array(image, mode='RGB8').save(filename)
+        png.from_array(image, mode='RGB;8').save(filename)
         print("Saved screenshot to {}".format(filename))
         self._open(os.path.abspath(filename))
 
