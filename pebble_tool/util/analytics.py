@@ -1,6 +1,8 @@
 from __future__ import absolute_import
 __author__ = 'katharine'
 
+from six import iteritems
+
 import collections
 import json
 import logging
@@ -28,10 +30,10 @@ class PebbleAnalytics(object):
     @classmethod
     def _flatten(cls, d, parent_key=''):
         items = []
-        for k, v in d.items():
+        for k, v in iteritems(d):
             new_key = parent_key + '_0_' + k if parent_key else k
             if isinstance(v, collections.MutableMapping):
-                items.extend(cls._flatten(v, new_key).items())
+                items.extend(iteritems(cls._flatten(v, new_key)))
             else:
                 items.append((new_key, v))
         return dict(items)

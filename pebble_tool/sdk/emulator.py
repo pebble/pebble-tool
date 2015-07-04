@@ -1,6 +1,8 @@
 from __future__ import absolute_import
 __author__ = 'katharine'
 
+from six.moves import range
+
 import errno
 import json
 import logging
@@ -41,7 +43,7 @@ class ManagedEmulatorTransport(WebsocketTransport):
 
     def connect(self):
         self._spawn_processes()
-        for i in xrange(10):
+        for i in range(10):
             time.sleep(0.5)
             try:
                 super(ManagedEmulatorTransport, self).connect()
@@ -154,7 +156,7 @@ class ManagedEmulatorTransport(WebsocketTransport):
 
     def _wait_for_qemu(self):
         logger.info("Waiting for the firmware to boot.")
-        for i in xrange(20):
+        for i in range(20):
             time.sleep(0.2)
             try:
                 s = socket.create_connection(('localhost', self.qemu_serial_port))

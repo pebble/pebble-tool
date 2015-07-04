@@ -1,5 +1,7 @@
 __author__ = 'katharine'
 
+from six import with_metaclass
+
 import argparse
 import logging
 import os
@@ -27,8 +29,7 @@ class SelfRegisteringCommand(type):
         super(SelfRegisteringCommand, cls).__init__(name, bases, dct)
 
 
-class BaseCommand(object):
-    __metaclass__ = SelfRegisteringCommand
+class BaseCommand(with_metaclass(SelfRegisteringCommand)):
     command = None
 
     @classmethod
@@ -40,7 +41,7 @@ class BaseCommand(object):
     @classmethod
     def _shared_parser(cls):
         parser = argparse.ArgumentParser(add_help=False)
-        parser.add_argument('-v', action='count', help="Degree of verbosity (use more v for more verbosity)")
+        parser.add_argument('-v', action='count', default=0, help="Degree of verbosity (use more v for more verbosity)")
         return [parser]
 
     def __call__(self, args):

@@ -21,8 +21,10 @@ def run_tool(args=None):
     parser.add_argument("--version", action="version", version="Pebble SDK {}".format(sdk_version()))
     register_children(parser)
     args = parser.parse_args(args)
+    if not hasattr(args, 'func'):
+        parser.error("no subcommand specified.")
     try:
         args.func(args)
     except ToolError as e:
-        print(str(e))
+        parser.exit(message=str(e), status=1)
         sys.exit(1)

@@ -38,7 +38,7 @@ class PebbleProject(object):
         if os.path.islink(os.path.join(project_dir, 'pebble_app.ld')) \
                 or os.path.exists(os.path.join(project_dir, 'resources/src/resource_map.json')) \
                 or not os.path.exists(os.path.join(project_dir, 'wscript')) \
-                or not 'sdkVersion' in app_info.keys() \
+                or 'sdkVersion' not in app_info \
                 or app_info.get("sdkVersion", None) != SDK_VERSION:
             raise OutdatedProjectException("This project is outdated (try 'pebble convert-project').")
 

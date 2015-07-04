@@ -1,6 +1,8 @@
 from __future__ import absolute_import, print_function
 __author__ = 'katharine'
 
+from six.moves import range
+
 import datetime
 import itertools
 import png
@@ -9,9 +11,11 @@ from progressbar import ProgressBar, Bar, ReverseBar, FileTransferSpeed, Timer, 
 import subprocess
 import sys
 
+from libpebble2.exceptions import ScreenshotError
 from libpebble2.services.screenshot import Screenshot
 
 from .base import PebbleCommand
+from pebble_tool.exceptions import ToolError
 
 
 class ScreenshotCommand(PebbleCommand):
@@ -29,7 +33,10 @@ class ScreenshotCommand(PebbleCommand):
         screenshot.register_handler("progress", self._handle_progress)
 
         self.progress_bar.start()
-        image = screenshot.grab_image()
+        try:
+            image = screenshot.grab_image()
+        except ScreenshotError as e:
+            raise ToolError(str(e) + " (try rebooting the watch)")
         if not args.no_correction:
             image = self._correct_colours(image)
         self.progress_bar.finish()
@@ -112,7 +119,7 @@ class ScreenshotCommand(PebbleCommand):
             (255, 255, 170): (247, 249, 195),
             (255, 255, 255): (255, 255, 255),
         }
-        return [list(itertools.chain(*[mapping[y[x], y[x+1], y[x+2]] for x in xrange(0, len(y), 3)])) for y in image]
+        return [list(itertools.chain(*[mapping[y[x], y[x+1], y[x+2]] for x in range(0, len(y), 3)])) for y in image]
 
     @classmethod
     def _generate_filename(cls):

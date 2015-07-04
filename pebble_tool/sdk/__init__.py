@@ -14,7 +14,7 @@ SDK_VERSION = '3'
 
 def sdk_path():
     path = (os.getenv('PEBBLE_SDK_PATH', None) or
-            os.path.normpath(os.path.join(os.path.dirname(__file__),'..', '..', '..')))
+            os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
     if not os.path.exists(path):
         raise MissingSDK("SDK unavailable; can't run this command.")
     return path
@@ -27,12 +27,13 @@ def sdk_version():
     except ImportError:
         here = os.path.dirname(__file__)
         try:
-            return subprocess.check_output(["git", "describe"], cwd=here, stderr=subprocess.STDOUT).strip()
+            return subprocess.check_output(["git", "describe"], cwd=here,
+                                           stderr=subprocess.STDOUT).decode('utf-8').strip()
         except subprocess.CalledProcessError as e:
             if e.returncode == 128:
                 try:
                     return 'g{}'.format(subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=here,
-                                                                stderr=subprocess.STDOUT)).strip()
+                                                                stderr=subprocess.STDOUT).decode('utf-8')).strip()
                 except subprocess.CalledProcessError as e:
                     pass
             return 'unknown'
