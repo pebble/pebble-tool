@@ -12,6 +12,7 @@ from libpebble2.exceptions import ConnectionError
 from libpebble2.protocol.system import TimeMessage, SetUTC
 
 from pebble_tool.exceptions import ToolError
+from pebble_tool.sdk import pebble_platforms
 from pebble_tool.sdk.emulator import ManagedEmulatorTransport
 from pebble_tool.sdk.cloudpebble import CloudPebbleTransport
 from pebble_tool.util.analytics import post_event
@@ -62,11 +63,17 @@ class PebbleCommand(BaseCommand):
     @classmethod
     def _shared_parser(cls):
         parser = argparse.ArgumentParser(add_help=False)
-        parser.add_argument('--phone', help="When using the developer connection, your phone's IP or hostname.")
-        parser.add_argument('--qemu', help="Use this option to connect directly to a QEMU instance.")
-        parser.add_argument('--cloudpebble', action='store_true', help="Use this option to connect to your phone via "
-                                                                       "the CloudPebble connection.")
-        parser.add_argument('--emulator', type=str, help="Launch an emulator", choices=['aplite', 'basalt'])
+        group = parser.add_mutually_exclusive_group()
+        group.add_argument('--phone', metavar='phone_ip',
+                            help="When using the developer connection, your phone's IP or hostname. "
+                                 "Equivalent to PEBBLE_PHONE.")
+        group.add_argument('--qemu', nargs='?', const='localhost:12344', metavar='host',
+                            help="Use this option to connect directly to a QEMU instance. Equivalent to PEBBLE_QEMU.")
+        group.add_argument('--cloudpebble', action='store_true', help="Use this option to connect to your phone via "
+                                                                       "the CloudPebble connection. Equivalent to "
+                                                                       "PEBBLE_CLOUDPEBBLE.")
+        group.add_argument('--emulator', type=str, help="Launch an emulator. Equivalent to PEBBLE_EMULATOR.",
+                           choices=pebble_platforms)
         return super(PebbleCommand, cls)._shared_parser() + [parser]
 
     def __call__(self, args):
@@ -91,6 +98,14 @@ class PebbleCommand(BaseCommand):
                 return self._connect_phone(os.environ['PEBBLE_PHONE'])
             elif 'PEBBLE_QEMU' in os.environ:
                 return self._connect_qemu(os.environ['PEBBLE_QEMU'])
+            elif 'PEBBLE_EMULATOR' in os.environ:
+                platform = os.environ['PEBBLE_EMULATOR']
+                if platform not in pebble_platforms:
+                    raise ToolError("PEBBLE_EMULATOR is set to '{}', which is not a valid platform "
+                                    "(pick from {})".format(platform, ', '.join(pebble_platforms)))
+                return self._connect_emulator(platform)
+            elif os.environ.get('PEBBLE_EMULATOR', False):
+                return self._connect_cloudpebble()
         raise ToolError("No pebble connection specified.")
 
     def _connect_phone(self, phone):
