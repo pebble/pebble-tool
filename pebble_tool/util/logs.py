@@ -51,7 +51,7 @@ class PebbleLogPrinter(object):
     def handle_phone_log(self, packet):
         assert isinstance(packet, WebSocketPhoneAppLog)
         print("[{}] javascript> {}".format(datetime.now().strftime("%H:%M:%S"),
-                                           packet.payload.tostring().decode('utf-8')))
+                                           packet.payload.decode('utf-8')))
 
     def _maybe_handle_crash(self, message):
         result = re.search(r"(App|Worker) fault! {([0-9a-f-]{36})} PC: (\S+) LR: (\S+)", message)
