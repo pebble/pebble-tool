@@ -1,4 +1,4 @@
-git+ssh://git@github.com/pebble/libpebble2.git@c5565bb
+libpebble2==0.0.1
 enum34==1.0.4
 httplib2==0.9.1
 oauth2client==1.4.11
