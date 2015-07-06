@@ -13,12 +13,13 @@ from .commands import install, logs, screenshot, timeline, ping, account, repl
 from .commands.sdk import convert, emulator
 from .exceptions import ToolError
 from .sdk import sdk_version
-from .util.analytics import wait_for_analytics
+from .util.analytics import wait_for_analytics, analytics_prompt
 
 
 def run_tool(args=None):
     urllib3.disable_warnings()  # sigh. :(
     logging.basicConfig()
+    analytics_prompt()
     parser = argparse.ArgumentParser(description="Pebble Tool", prog="pebble")
     parser.add_argument("--version", action="version", version="Pebble SDK {}".format(sdk_version()))
     register_children(parser)

@@ -1,9 +1,11 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 __author__ = 'katharine'
 
 from six import iteritems
+from six.moves import input
 
 import collections
+from distutils.util import strtobool
 import json
 import logging
 import os.path
@@ -51,8 +53,9 @@ class PebbleAnalytics(threading.Thread):
                 except IndexError:
                     break
                 if should_track:
-                    import time
                     requests.post(self.TD_SERVER, data=current)
+                else:
+                    logger.debug("Analytics disabled; not posting.")
                 self._store_queue()
             self.mark.wait()
             self.mark.clear()
@@ -74,7 +77,7 @@ class PebbleAnalytics(threading.Thread):
                 items.append((new_key, v))
         return dict(items)
 
-    def submit_event(self, event, **data):
+    def submit_event(self, event, force=False, **data):
         analytics = {
             'event': event,
             'identity': self._get_identity(),
@@ -96,8 +99,12 @@ class PebbleAnalytics(threading.Thread):
         fields = {
             'json': json.dumps(td_obj)
         }
-        self._enqueue(fields)
-        logger.debug("Queueing analytics data: {}".format(analytics))
+        if force:
+            requests.post(self.TD_SERVER, data=fields)
+            logger.debug("Synchronously transmitting analytics data: {}".format(analytics))
+        else:
+            logger.debug("Queueing analytics data: {}".format(analytics))
+            self._enqueue(fields)
 
     def _enqueue(self, fields):
         self.pending.append(fields)
@@ -111,8 +118,8 @@ class PebbleAnalytics(threading.Thread):
     def _should_track(self):
         # Should we track analytics?
         sdk_path = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-        dnt_file = os.path.join(sdk_path, "NO_TRACKING")
-        if os.path.exists(dnt_file):
+        permission_file = os.path.join(sdk_path, "ENABLE_ANALYTICS")
+        if not os.path.exists(permission_file):
             return False
 
         # Don't track if internet connection is down
@@ -198,3 +205,31 @@ def post_event(event, **data):
 
 def wait_for_analytics(timeout):
     PebbleAnalytics.get_shared().wait(timeout)
+
+
+def analytics_prompt():
+    sdk_path = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+    if (not os.path.exists(os.path.join(sdk_path, "ENABLE_ANALYTICS"))
+            and not os.path.exists(os.path.join(sdk_path, "NO_TRACKING"))):
+        print("Pebble collects metrics on your usage of our developer tools.")
+        print("We use this information to help prioritise further development of our tooling.")
+        print()
+        print("If you cannot respond interactively, create a file called ENABLE_ANALYTICS or")
+        print("NO_TRACKING in {}.".format(sdk_path))
+        print()
+        while True:
+            result = input("Would you like to opt in to this collection? [y/n] ")
+            try:
+                can_collect = strtobool(result)
+            except ValueError:
+                print("Please respond with either 'yes' or 'no'.")
+            else:
+                if can_collect:
+                    with open(os.path.join(sdk_path, "ENABLE_ANALYTICS"), 'w') as f:
+                        f.write('yay!')
+                else:
+                    logger.debug("Logging opt-out.")
+                    post_event("sdk_analytics_opt_out", force=True)
+                    with open(os.path.join(sdk_path, "NO_TRACKING"), 'w') as f:
+                        f.write('aww.')
+                break
