@@ -14,7 +14,7 @@ from libpebble2.protocol.logs import AppLogMessage, AppLogShippingControl
 from libpebble2.communication.transports.websocket import MessageTargetPhone
 from libpebble2.communication.transports.websocket.protocol import WebSocketPhoneAppLog
 
-from pebble_tool.exceptions import PebbleProjectException
+from pebble_tool.exceptions import PebbleProjectException, MissingSDK
 from pebble_tool.sdk import get_arm_tools_path
 from pebble_tool.sdk.project import PebbleProject
 
@@ -30,6 +30,10 @@ class PebbleLogPrinter(object):
         pebble.send_packet(AppLogShippingControl(enable=True))
         pebble.register_endpoint(AppLogMessage, self.handle_watch_log)
         pebble.register_transport_endpoint(MessageTargetPhone, WebSocketPhoneAppLog, self.handle_phone_log)
+        try:
+            os.environ['PATH'] += ":{}".format(get_arm_tools_path())
+        except MissingSDK:
+            pass
 
     def wait(self):
         try:
@@ -93,6 +97,11 @@ class PebbleLogPrinter(object):
             if address > 0x20000:
                 result = '???'
             else:
-                result = subprocess.check_output([os.path.join(get_arm_tools_path(), "arm-none-eabi-addr2line"),
-                                                  address_str, "--exe", elf_path]).strip()
+                try:
+                    result = subprocess.check_output(["arm-none-eabi-addr2line", address_str, "--exe",
+                                                      elf_path]).strip()
+                except OSError:
+                    return "(lookup failed: toolchain not found)"
+                except subprocess.CalledProcessError:
+                    return "???"
         return "{:24}: {:10} {}".format(name, address_str, result)
