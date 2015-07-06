@@ -9,6 +9,7 @@ import logging
 import os.path
 import platform
 import socket
+import threading
 import uuid
 
 import requests
@@ -21,11 +22,46 @@ from pebble_tool.sdk import sdk_version, get_persist_dir
 logger = logging.getLogger("pebble_tool.util.analytics")
 
 
-class PebbleAnalytics(object):
+class PebbleAnalytics(threading.Thread):
     TD_SERVER = "https://td.getpebble.com/td.pebble.sdk_events"
 
     def __init__(self):
-        self.should_track = self._should_track()
+        self.mark = threading.Event()
+        self.pending_filename = os.path.join(get_persist_dir(), "pending_analytics.json")
+        self.should_run = True
+        self.file_lock = threading.Lock()
+        try:
+            with open(self.pending_filename) as f:
+                old_events = json.load(f)
+        except (IOError, ValueError):
+            old_events = []
+        self.pending = collections.deque(old_events)
+        super(PebbleAnalytics, self).__init__()
+        self.daemon = True
+        self.start()
+
+    def run(self):
+        should_track = self._should_track()
+        first_run = True
+        while first_run or self.should_run:
+            first_run = False
+            while True:
+                try:
+                    current = self.pending.popleft()
+                except IndexError:
+                    break
+                if should_track:
+                    import time
+                    requests.post(self.TD_SERVER, data=current)
+                self._store_queue()
+            self.mark.wait()
+            self.mark.clear()
+
+    def wait(self, timeout):
+        self.mark.set()
+        self.should_run = False
+        self.join(timeout)
+        return self.is_alive
 
     @classmethod
     def _flatten(cls, d, parent_key=''):
@@ -39,9 +75,6 @@ class PebbleAnalytics(object):
         return dict(items)
 
     def submit_event(self, event, **data):
-        if not self.should_track:
-            return
-
         analytics = {
             'event': event,
             'identity': self._get_identity(),
@@ -63,8 +96,17 @@ class PebbleAnalytics(object):
         fields = {
             'json': json.dumps(td_obj)
         }
-        logger.debug("Posting analytics data: {}".format(analytics))
-        requests.post(self.TD_SERVER, data=fields)
+        self._enqueue(fields)
+        logger.debug("Queueing analytics data: {}".format(analytics))
+
+    def _enqueue(self, fields):
+        self.pending.append(fields)
+        self._store_queue()
+        self.mark.set()
+
+    def _store_queue(self):
+        with open(self.pending_filename, 'w') as f:
+            json.dump(list(self.pending), f)
 
     def _should_track(self):
         # Should we track analytics?
@@ -152,3 +194,7 @@ class PebbleAnalytics(object):
 # Convenience method.
 def post_event(event, **data):
     PebbleAnalytics.get_shared().submit_event(event, **data)
+
+
+def wait_for_analytics(timeout):
+    PebbleAnalytics.get_shared().wait(timeout)

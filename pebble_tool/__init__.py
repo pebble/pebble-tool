@@ -1,6 +1,7 @@
 from __future__ import absolute_import, print_function
 __author__ = 'katharine'
 
+import atexit
 import argparse
 import logging
 import sys
@@ -12,6 +13,7 @@ from .commands import install, logs, screenshot, timeline, ping, account, repl
 from .commands.sdk import convert, emulator
 from .exceptions import ToolError
 from .sdk import sdk_version
+from .util.analytics import wait_for_analytics
 
 
 def run_tool(args=None):
@@ -28,3 +30,10 @@ def run_tool(args=None):
     except ToolError as e:
         parser.exit(message=str(e), status=1)
         sys.exit(1)
+
+@atexit.register
+def wait_for_cleanup():
+    import time
+    now = time.time()
+    wait_for_analytics(2)
+    logging.info("Spent %f seconds waiting for analytics.", time.time() - now)
