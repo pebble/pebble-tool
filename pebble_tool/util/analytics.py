@@ -128,7 +128,7 @@ class PebbleAnalytics(threading.Thread):
             # flavors of linux (Ubuntu 13.04 and others), the timeout argument
             # is ignored during the DNS lookup portion so we test connectivity
             # using an IP address only.
-            requests.head("http://209.118.208.39", timeout=0.75)
+            requests.head("http://209.118.208.39", timeout=2)
         except (requests.RequestException, socket.error):
             logger.debug("Analytics collection disabled due to lack of internet connectivity")
             return False
