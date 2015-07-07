@@ -1,6 +1,7 @@
 from __future__ import absolute_import, print_function
 __author__ = 'katharine'
 
+import argparse
 import os
 import subprocess
 import time
@@ -18,7 +19,7 @@ class BuildCommand(SDKCommand):
         super(BuildCommand, self).__call__(args)
         start_time = time.time()
         try:
-            self._waf("configure", "build")
+            self._waf("configure", "build", *args.args)
         except subprocess.CalledProcessError:
             duration = time.time() - start_time
             post_event("app_build_failed", build_time=duration)
@@ -53,6 +54,12 @@ class BuildCommand(SDKCommand):
             if ext in extensions:
                 src_lines += sum(1 for line in open(os.path.join(path, name)))
         return src_lines
+
+    @classmethod
+    def add_parser(cls, parser):
+        parser = super(BuildCommand, cls).add_parser(parser)
+        parser.add_argument('args', nargs=argparse.REMAINDER, help="Extra arguments to pass to waf.")
+        return parser
 
 
 class CleanCommand(SDKCommand):
