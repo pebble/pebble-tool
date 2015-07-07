@@ -22,8 +22,12 @@ def run_tool(args=None):
     analytics_prompt()
     parser = argparse.ArgumentParser(description="Pebble Tool", prog="pebble")
     parser.add_argument("--version", action="version", version="Pebble SDK {}".format(sdk_version()))
+    parser.add_argument("--waf", help="A string containing arguments to pass directly to Waf")
     register_children(parser)
-    args = parser.parse_args(args)
+    args, unknown = parser.parse_known_args(args)
+    args.waf = args.waf.split() if args.waf else []
+    args.waf.extend(unknown)
+
     if not hasattr(args, 'func'):
         parser.error("no subcommand specified.")
     try:
@@ -31,6 +35,7 @@ def run_tool(args=None):
     except ToolError as e:
         parser.exit(message=str(e), status=1)
         sys.exit(1)
+
 
 @atexit.register
 def wait_for_cleanup():

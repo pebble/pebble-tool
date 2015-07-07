@@ -49,6 +49,9 @@ class SDKCommand(BaseCommand):
         if self._verbosity > 0:
             v = '-' + ('v' * self._verbosity)
             args.append(v)
+        if self._extra_args:
+            args.extend(self._extra_args)
+
         subprocess.check_call([self.waf_path] + args)
 
     def __call__(self, args):

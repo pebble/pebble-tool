@@ -45,6 +45,7 @@ class BaseCommand(with_metaclass(SelfRegisteringCommand)):
         return [parser]
 
     def __call__(self, args):
+        self._extra_args = args.waf
         self._set_debugging(args.v)
         post_event("invoke_command_{}".format(self.command))
 
