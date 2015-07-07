@@ -18,8 +18,8 @@ import requests
 
 from pebble_tool.account import get_default_account
 from pebble_tool.sdk.project import PebbleProject
-from pebble_tool.exceptions import PebbleProjectException
-from pebble_tool.sdk import sdk_version, get_persist_dir
+from pebble_tool.exceptions import MissingSDK, PebbleProjectException
+from pebble_tool.sdk import sdk_path, sdk_version, get_persist_dir
 
 logger = logging.getLogger("pebble_tool.util.analytics")
 
@@ -117,8 +117,7 @@ class PebbleAnalytics(threading.Thread):
 
     def _should_track(self):
         # Should we track analytics?
-        sdk_path = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-        permission_file = os.path.join(sdk_path, "ENABLE_ANALYTICS")
+        permission_file = os.path.join(self.get_option_dir(), "ENABLE_ANALYTICS")
         if not os.path.exists(permission_file):
             return False
 
@@ -175,6 +174,13 @@ class PebbleAnalytics(threading.Thread):
             'python_version': platform.python_version(),
         }
 
+    @classmethod
+    def get_option_dir(cls):
+        try:
+            return os.path.normpath(os.path.join(sdk_path(), '..'))
+        except MissingSDK:
+            return get_persist_dir()
+
     _shared_analytics = None
     @classmethod
     def get_shared(cls, *args, **kwargs):
@@ -208,14 +214,14 @@ def wait_for_analytics(timeout):
 
 
 def analytics_prompt():
-    sdk_path = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-    if (not os.path.exists(os.path.join(sdk_path, "ENABLE_ANALYTICS"))
-            and not os.path.exists(os.path.join(sdk_path, "NO_TRACKING"))):
+    path = PebbleAnalytics.get_option_dir()
+    if (not os.path.exists(os.path.join(path, "ENABLE_ANALYTICS"))
+            and not os.path.exists(os.path.join(path, "NO_TRACKING"))):
         print("Pebble collects metrics on your usage of our developer tools.")
         print("We use this information to help prioritise further development of our tooling.")
         print()
         print("If you cannot respond interactively, create a file called ENABLE_ANALYTICS or")
-        print("NO_TRACKING in {}.".format(sdk_path))
+        print("NO_TRACKING in '{}/'.".format(path))
         print()
         while True:
             result = input("Would you like to opt in to this collection? [y/n] ")
@@ -225,11 +231,11 @@ def analytics_prompt():
                 print("Please respond with either 'yes' or 'no'.")
             else:
                 if can_collect:
-                    with open(os.path.join(sdk_path, "ENABLE_ANALYTICS"), 'w') as f:
+                    with open(os.path.join(path, "ENABLE_ANALYTICS"), 'w') as f:
                         f.write('yay!')
                 else:
                     logger.debug("Logging opt-out.")
                     post_event("sdk_analytics_opt_out", force=True)
-                    with open(os.path.join(sdk_path, "NO_TRACKING"), 'w') as f:
+                    with open(os.path.join(path, "NO_TRACKING"), 'w') as f:
                         f.write('aww.')
                 break

@@ -15,7 +15,7 @@ SDK_VERSION = '3'
 def sdk_path():
     path = (os.getenv('PEBBLE_SDK_PATH', None) or
             os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
-    if not os.path.exists(path):
+    if not os.path.exists(os.path.join(path, 'Pebble', 'waf')):
         raise MissingSDK("SDK unavailable; can't run this command.")
     return path
 
