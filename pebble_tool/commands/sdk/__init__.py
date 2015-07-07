@@ -44,12 +44,12 @@ class SDKCommand(BaseCommand):
             # We have a viable python2. Use our hack to stick 'python' into the path.
             os.environ['PATH'] = '{}:{}'.format(os.path.normpath(os.path.dirname(__file__)), os.environ['PATH'])
 
-    def _waf(self, *args):
+    def _waf(self, command, *args):
         args = list(args)
         if self._verbosity > 0:
             v = '-' + ('v' * self._verbosity)
-            args.append(v)
-        subprocess.check_call([self.waf_path] + args)
+            args = [v] + args
+        subprocess.check_call([self.waf_path, command] + args)
 
     def __call__(self, args):
         super(SDKCommand, self).__call__(args)

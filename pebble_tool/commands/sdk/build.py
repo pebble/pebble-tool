@@ -19,7 +19,13 @@ class BuildCommand(SDKCommand):
         super(BuildCommand, self).__call__(args)
         start_time = time.time()
         try:
-            self._waf("configure", "build", *args.args)
+            waf = list(args.args)
+            try:
+                waf.remove('--')
+            except ValueError:
+                pass
+            self._waf("configure")
+            self._waf("build", *waf)
         except subprocess.CalledProcessError:
             duration = time.time() - start_time
             post_event("app_build_failed", build_time=duration)
