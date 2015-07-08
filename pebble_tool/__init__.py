@@ -9,7 +9,7 @@ import requests.packages.urllib3 as urllib3
 
 from .commands.base import register_children
 from .commands.sdk import build, create
-from .commands import install, logs, screenshot, timeline, ping, account, repl
+from .commands import install, logs, screenshot, timeline, ping, account, repl, emucontrol
 from .commands.sdk import analyse_size, convert, emulator
 from .exceptions import ToolError
 from .sdk import sdk_version
