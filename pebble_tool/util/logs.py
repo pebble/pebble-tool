@@ -17,6 +17,7 @@ from libpebble2.communication.transports.websocket.protocol import WebSocketPhon
 from pebble_tool.exceptions import PebbleProjectException, MissingSDK
 from pebble_tool.sdk import get_arm_tools_path
 from pebble_tool.sdk.project import PebbleProject
+from pebble_tool.util.colorscheme import Color
 
 logger = logging.getLogger("pebble_tool.util.logs")
 
@@ -48,14 +49,14 @@ class PebbleLogPrinter(object):
         assert isinstance(packet, AppLogMessage)
         # We do actually know the original timestamp of the log (it's in packet.timestamp), but if we
         # use it that it meshes oddly with the JS logs, which must use the user's system time.
-        print("[{}] {}:{}> {}".format(datetime.now().strftime("%H:%M:%S"), packet.filename,
-                                      packet.line_number, packet.message))
+        print(Color.watch_log("[{}] {}:{}> {}".format(datetime.now().strftime("%H:%M:%S"), packet.filename,
+                                      packet.line_number, packet.message)))
         self._maybe_handle_crash(packet.message)
 
     def handle_phone_log(self, packet):
         assert isinstance(packet, WebSocketPhoneAppLog)
-        print("[{}] javascript> {}".format(datetime.now().strftime("%H:%M:%S"),
-                                           packet.payload.decode('utf-8')))
+        print(Color.phone_log("[{}] javascript> {}".format(datetime.now().strftime("%H:%M:%S"),
+                                           packet.payload.decode('utf-8'))))
 
     def _maybe_handle_crash(self, message):
         result = re.search(r"(App|Worker) fault! {([0-9a-f-]{36})} PC: (\S+) LR: (\S+)", message)
@@ -65,10 +66,10 @@ class PebbleLogPrinter(object):
         try:
             project = PebbleProject()
         except PebbleProjectException:
-            print("Crashed, but no active project available to desym.")
+            print(Color.crash_info("Crashed, but no active project available to desym."))
             return
         if crash_uuid != project.uuid:
-            print("An app crashed, but it wasn't the active project.")
+            print(Color.crash_info("An app crashed, but it wasn't the active project."))
             return
         self._handle_crash(result.group(1).lower(), result.group(3), result.group(4))
 
@@ -80,13 +81,13 @@ class PebbleLogPrinter(object):
             app_elf_path = "build/{}/pebble-{}.elf".format(platform, process)
 
         if not os.path.exists(app_elf_path):
-            print("Could not look up debugging symbols.")
-            print("Could not find ELF file: {}".format(app_elf_path))
-            print("Please try rebuilding your project")
+            print(Color.crash_info("Could not look up debugging symbols."))
+            print(Color.crash_info("Could not find ELF file: {}".format(app_elf_path)))
+            print(Color.crash_info("Please try rebuilding your project"))
             return
 
-        print(self._format_register("Program Counter (PC)", pc, app_elf_path))
-        print(self._format_register("Link Register (LR)", lr, app_elf_path))
+        print(Color.crash(self._format_register("Program Counter (PC)", pc, app_elf_path)))
+        print(Color.crash(self._format_register("Link Register (LR)", lr, app_elf_path)))
 
     def _format_register(self, name, address_str, elf_path):
         try:
