@@ -41,6 +41,7 @@ class PebbleLogPrinter(object):
             while self.pebble.connected:
                 time.sleep(1)
         except KeyboardInterrupt:
+            self.pebble.send_packet(AppLogShippingControl(enable=False))
             return
         else:
             print("Disconnected.")
