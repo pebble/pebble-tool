@@ -16,6 +16,7 @@ import tempfile
 import time
 
 from libpebble2.communication.transports.websocket import WebsocketTransport
+from libpebble2.exceptions import ConnectionError
 
 from pebble_tool.account import get_default_account
 from pebble_tool.exceptions import MissingEmulatorError, ToolError
@@ -47,7 +48,7 @@ class ManagedEmulatorTransport(WebsocketTransport):
             time.sleep(0.5)
             try:
                 super(ManagedEmulatorTransport, self).connect()
-            except socket.error:
+            except ConnectionError:
                 continue
             else:
                 return
