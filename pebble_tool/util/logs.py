@@ -70,11 +70,8 @@ class PebbleLogPrinter(object):
             if isinstance(packet, WebSocketPhoneAppLog):
                 colour = self.phone_colour
             else:
-                try:
-                    colour = self.colour_scheme[packet.level]
-                except KeyError:
-                    # Select the next lowest level if the exact level is not in the color scheme
-                    colour = next(self.colour_scheme[level] for level in self.colour_scheme if packet.level >= level)
+                # Select the next lowest level if the exact level is not in the color scheme
+                colour = next(self.colour_scheme[level] for level in self.colour_scheme if packet.level >= level)
         return colour
 
     def wait(self):
