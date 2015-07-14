@@ -9,7 +9,10 @@ import re
 import subprocess
 import time
 import uuid
+import sys
 
+from functools import partial
+from collections import OrderedDict
 from libpebble2.protocol.logs import AppLogMessage, AppLogShippingControl
 from libpebble2.communication.transports.websocket import MessageTargetPhone
 from libpebble2.communication.transports.websocket.protocol import WebSocketPhoneAppLog
@@ -17,17 +20,33 @@ from libpebble2.communication.transports.websocket.protocol import WebSocketPhon
 from pebble_tool.exceptions import PebbleProjectException, MissingSDK
 from pebble_tool.sdk import get_arm_tools_path
 from pebble_tool.sdk.project import PebbleProject
-from pebble_tool.util.colorscheme import WatchColors
+import colors
 
 logger = logging.getLogger("pebble_tool.util.logs")
 
 
 class PebbleLogPrinter(object):
-    def __init__(self, pebble):
+    color_scheme = OrderedDict([
+        # LOG_LEVEL_DEBUG_VERBOSE
+        (255, colors.cyan),
+        # LOG_LEVEL_DEBUG
+        (200, colors.magenta),
+        # LOG_LEVEL_INFO
+        (100, None),
+        # LOG_LEVEL_WARNING
+        (50, colors.red),
+        # LOG_LEVEL_ERROR
+        (1, partial(colors.color, fg='red', style='negative')),
+        # LOG_LEVEL_ALWAYS
+        (0, None)])
+
+
+    def __init__(self, pebble, print_with_color=None):
         """
         :param pebble: libpebble2.communication.PebbleConnection
         """
         self.pebble = pebble
+        self.print_with_color = print_with_color if print_with_color is not None else sys.stdout.isatty()
         pebble.send_packet(AppLogShippingControl(enable=True))
         pebble.register_endpoint(AppLogMessage, self.handle_watch_log)
         pebble.register_transport_endpoint(MessageTargetPhone, WebSocketPhoneAppLog, self.handle_phone_log)
@@ -35,6 +54,24 @@ class PebbleLogPrinter(object):
             os.environ['PATH'] += ":{}".format(get_arm_tools_path())
         except MissingSDK:
             pass
+
+
+    def _print(self, packet, message):
+        if self.print_with_color:
+            if isinstance(packet, WebSocketPhoneAppLog):
+                color = colors.blue
+            else:
+                try:
+                    color = self.color_scheme[packet.level]
+                except KeyError:
+                    # Select the next lowest level if the exact level is not in the color scheme
+                    color = next(self.color_scheme[level] for level in self.color_scheme if packet.level >= level)
+        else:
+            color = None
+        if color:
+            print(color(message))
+        else:
+            print(message)
 
     def wait(self):
         try:
@@ -47,35 +84,34 @@ class PebbleLogPrinter(object):
 
     def handle_watch_log(self, packet):
         assert isinstance(packet, AppLogMessage)
-        with WatchColors(packet.level):
-            # We do actually know the original timestamp of the log (it's in packet.timestamp), but if we
-            # use it that it meshes oddly with the JS logs, which must use the user's system time.
-            print("[{}] {}:{}> {}".format(datetime.now().strftime("%H:%M:%S"), packet.filename,
-                                          packet.line_number, packet.message))
-            self._maybe_handle_crash(packet.message)
+
+        # We do actually know the original timestamp of the log (it's in packet.timestamp), but if we
+        # use it that it meshes oddly with the JS logs, which must use the user's system time.
+        self._print(packet, "[{}] {}:{}> {}".format(datetime.now().strftime("%H:%M:%S"), packet.filename,
+                                      packet.line_number, packet.message))
+        self._maybe_handle_crash(packet)
 
     def handle_phone_log(self, packet):
         assert isinstance(packet, WebSocketPhoneAppLog)
-        print("[{}] javascript> {}".format(datetime.now().strftime("%H:%M:%S"),
+        self._print(packet, "[{}] javascript> {}".format(datetime.now().strftime("%H:%M:%S"),
                                                packet.payload.decode('utf-8')))
 
-    def _maybe_handle_crash(self, message):
-        #print(packet.level)
-        result = re.search(r"(App|Worker) fault! {([0-9a-f-]{36})} PC: (\S+) LR: (\S+)", message)
+    def _maybe_handle_crash(self, packet):
+        result = re.search(r"(App|Worker) fault! {([0-9a-f-]{36})} PC: (\S+) LR: (\S+)", packet.message)
         if result is None:
             return
         crash_uuid = uuid.UUID(result.group(2))
         try:
             project = PebbleProject()
         except PebbleProjectException:
-            print("Crashed, but no active project available to desym.")
+            self._print(packet, "Crashed, but no active project available to desym.")
             return
         if crash_uuid != project.uuid:
-            print("An app crashed, but it wasn't the active project.")
+            self._print(packet, "An app crashed, but it wasn't the active project.")
             return
-        self._handle_crash(result.group(1).lower(), result.group(3), result.group(4))
+        self._handle_crash(packet, result.group(1).lower(), result.group(3), result.group(4))
 
-    def _handle_crash(self, process, pc, lr):
+    def _handle_crash(self, packet, process, pc, lr):
 
         platform = self.pebble.watch_platform
         if platform == 'unknown':
@@ -84,13 +120,13 @@ class PebbleLogPrinter(object):
             app_elf_path = "build/{}/pebble-{}.elf".format(platform, process)
 
         if not os.path.exists(app_elf_path):
-            print("Could not look up debugging symbols.")
-            print("Could not find ELF file: {}".format(app_elf_path))
-            print("Please try rebuilding your project")
+            self._print(packet, "Could not look up debugging symbols.")
+            self._print(packet, "Could not find ELF file: {}".format(app_elf_path))
+            self._print(packet, "Please try rebuilding your project")
             return
 
-        print(self._format_register("Program Counter (PC)", pc, app_elf_path))
-        print(self._format_register("Link Register (LR)", lr, app_elf_path))
+        self._print(packet, self._format_register("Program Counter (PC)", pc, app_elf_path))
+        self._print(packet, self._format_register("Link Register (LR)", lr, app_elf_path))
 
     def _format_register(self, name, address_str, elf_path):
         try:
