@@ -36,7 +36,11 @@ class ScreenshotCommand(PebbleCommand):
         try:
             image = screenshot.grab_image()
         except ScreenshotError as e:
-            raise ToolError(str(e) + " (try rebooting the watch)")
+            if self.pebble.firmware_version.major == 3 and self.pebble.firmware_version.minor == 2:
+                # PBL-21154: Screenshots failing with error code 2 (out of memory)
+                raise ToolError(str(e) + " (screenshots are known to be broken using firmware 3.2; try the emulator.)")
+            else:
+                raise ToolError(str(e) + " (try rebooting the watch)")
         if not args.no_correction:
             image = self._correct_colours(image)
         self.progress_bar.finish()
