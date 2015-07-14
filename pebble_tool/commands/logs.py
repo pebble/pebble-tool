@@ -18,6 +18,6 @@ class LogsCommand(PebbleCommand):
     def add_parser(cls, parser):
         parser = super(LogsCommand, cls).add_parser(parser)
         group = parser.add_mutually_exclusive_group()
-        group.add_argument('--colour', action='store_true')
-        group.add_argument('--no-colour', action='store_true')
+        group.add_argument('--color', action='store_true', help="Force colored output on")
+        group.add_argument('--no-color', action='store_true', help="Force colored output off")
         return parser
