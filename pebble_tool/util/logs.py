@@ -26,7 +26,7 @@ logger = logging.getLogger("pebble_tool.util.logs")
 
 
 class PebbleLogPrinter(object):
-    color_scheme = OrderedDict([
+    colour_scheme = OrderedDict([
         # LOG_LEVEL_DEBUG_VERBOSE
         (255, colors.cyan),
         # LOG_LEVEL_DEBUG
@@ -39,14 +39,16 @@ class PebbleLogPrinter(object):
         (1, partial(colors.color, fg='red', style='negative')),
         # LOG_LEVEL_ALWAYS
         (0, None)])
+    phone_colour = colors.blue
 
 
-    def __init__(self, pebble, print_with_color=None):
+    def __init__(self, pebble, force_colour=None):
         """
         :param pebble: libpebble2.communication.PebbleConnection
+        :param force_colour: Bool
         """
         self.pebble = pebble
-        self.print_with_color = print_with_color if print_with_color is not None else sys.stdout.isatty()
+        self.print_with_colour = force_colour if force_colour is not None else sys.stdout.isatty()
         pebble.send_packet(AppLogShippingControl(enable=True))
         pebble.register_endpoint(AppLogMessage, self.handle_watch_log)
         pebble.register_transport_endpoint(MessageTargetPhone, WebSocketPhoneAppLog, self.handle_phone_log)
@@ -57,21 +59,25 @@ class PebbleLogPrinter(object):
 
 
     def _print(self, packet, message):
-        if self.print_with_color:
-            if isinstance(packet, WebSocketPhoneAppLog):
-                color = colors.blue
-            else:
-                try:
-                    color = self.color_scheme[packet.level]
-                except KeyError:
-                    # Select the next lowest level if the exact level is not in the color scheme
-                    color = next(self.color_scheme[level] for level in self.color_scheme if packet.level >= level)
-        else:
-            color = None
-        if color:
-            print(color(message))
+        colour = self._get_colour(packet)
+        if colour:
+            print(colour(message))
         else:
             print(message)
+
+    def _get_colour(self, packet):
+        colour = None
+        if self.print_with_colour:
+            if isinstance(packet, WebSocketPhoneAppLog):
+                colour = self.phone_colour
+            else:
+                try:
+                    colour = self.colour_scheme[packet.level]
+                except KeyError:
+                    # Select the next lowest level if the exact level is not in the color scheme
+                    colour = next(self.colour_scheme[level] for level in self.colour_scheme if packet.level >= level)
+
+        return colour
 
     def wait(self):
         try:
