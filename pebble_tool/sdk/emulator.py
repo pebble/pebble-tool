@@ -20,6 +20,7 @@ from libpebble2.exceptions import ConnectionError
 
 from pebble_tool.account import get_default_account
 from pebble_tool.exceptions import MissingEmulatorError, ToolError
+from pebble_tool.util.analytics import post_event
 from . import sdk_path, get_sdk_persist_dir
 
 logger = logging.getLogger("pebble_tool.sdk.emulator")
@@ -167,6 +168,7 @@ class ManagedEmulatorTransport(WebsocketTransport):
             else:
                 break
         else:
+            post_event("qemu_launched", success=False, reason="qemu_launch_timeout")
             raise ToolError("Emulator launch timed out.")
         received = ''
         while True:
@@ -175,6 +177,7 @@ class ManagedEmulatorTransport(WebsocketTransport):
             if "<SDK Home>" in received or "<Launcher>" in received:
                 break
         s.close()
+        post_event("qemu_launched", success=True)
         logger.info("Firmware booted.")
 
     def _copy_spi_image(self, path):
