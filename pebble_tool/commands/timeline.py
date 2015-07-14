@@ -11,7 +11,8 @@ from libpebble2.communication.transports.websocket.protocol import (WebSocketTim
                                                                     WebSocketTimelineResponse)
 
 from .base import PebbleCommand
-from pebble_tool.exceptions import ToolError
+from pebble_tool.exceptions import ToolError, PebbleProjectException
+from pebble_tool.sdk.project import PebbleProject
 from pebble_tool.util.logs import PebbleLogPrinter
 
 
@@ -25,7 +26,13 @@ class InsertPinCommand(PebbleCommand):
             raise ToolError("insert-pin only works when connected via websocket to a phone or emulator.")
 
         pin_id = args.id
-        app_uuid = args.app_uuid
+        if args.app_uuid is not None:
+            app_uuid = args.app_uuid
+        else:
+            try:
+                app_uuid = str(PebbleProject().uuid)
+            except PebbleProjectException:
+                raise ToolError("You must either use this command from a pebble project or specify --app-uuid.")
 
         try:
             pin = json.load(args.file)
