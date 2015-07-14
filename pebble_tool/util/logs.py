@@ -15,7 +15,7 @@ from functools import partial
 from collections import OrderedDict
 from libpebble2.protocol.logs import AppLogMessage, AppLogShippingControl
 from libpebble2.communication.transports.websocket import MessageTargetPhone
-from libpebble2.communication.transports.websocket.protocol import WebSocketPhoneAppLog
+from libpebble2.communication.transports.websocket.protocol import WebSocketPhoneAppLog, WebSocketConnectionStatusUpdate
 
 from pebble_tool.exceptions import PebbleProjectException, MissingSDK
 from pebble_tool.sdk import get_arm_tools_path
@@ -52,6 +52,7 @@ class PebbleLogPrinter(object):
         pebble.send_packet(AppLogShippingControl(enable=True))
         pebble.register_endpoint(AppLogMessage, self.handle_watch_log)
         pebble.register_transport_endpoint(MessageTargetPhone, WebSocketPhoneAppLog, self.handle_phone_log)
+        pebble.register_transport_endpoint(MessageTargetPhone, WebSocketConnectionStatusUpdate, self.handle_connection)
         try:
             os.environ['PATH'] += ":{}".format(get_arm_tools_path())
         except MissingSDK:
@@ -84,6 +85,7 @@ class PebbleLogPrinter(object):
             while self.pebble.connected:
                 time.sleep(1)
         except KeyboardInterrupt:
+            self.pebble.send_packet(AppLogShippingControl(enable=False))
             return
         else:
             print("Disconnected.")
@@ -101,6 +103,11 @@ class PebbleLogPrinter(object):
         assert isinstance(packet, WebSocketPhoneAppLog)
         self._print(packet, "[{}] javascript> {}".format(datetime.now().strftime("%H:%M:%S"),
                                                          packet.payload.decode('utf-8')))
+
+    def handle_connection(self, packet):
+        assert isinstance(packet, WebSocketConnectionStatusUpdate)
+        if packet.status == WebSocketConnectionStatusUpdate.StatusCode.Connected:
+            self.pebble.send_packet(AppLogShippingControl(enable=True))
 
     def _maybe_handle_crash(self, packet):
         result = re.search(r"(App|Worker) fault! {([0-9a-f-]{36})} PC: (\S+) LR: (\S+)", packet.message)

@@ -10,6 +10,7 @@ import time
 from libpebble2.communication import PebbleConnection
 from libpebble2.communication.transports.qemu import QemuTransport
 from libpebble2.communication.transports.websocket import WebsocketTransport
+from libpebble2.communication.transports.serial import SerialTransport
 from libpebble2.exceptions import ConnectionError
 from libpebble2.protocol.system import TimeMessage, SetUTC
 
@@ -75,6 +76,7 @@ class PebbleCommand(BaseCommand):
                                                                        "PEBBLE_CLOUDPEBBLE.")
         group.add_argument('--emulator', type=str, help="Launch an emulator. Equivalent to PEBBLE_EMULATOR.",
                            choices=pebble_platforms)
+        group.add_argument('--serial', type=str, help="Connected directly, given a path to a serial device.")
         return super(PebbleCommand, cls)._shared_parser() + [parser]
 
     def __call__(self, args):
@@ -94,6 +96,8 @@ class PebbleCommand(BaseCommand):
             return self._connect_emulator(args.emulator)
         elif args.cloudpebble:
             return self._connect_cloudpebble()
+        elif args.serial:
+            return self._connect_serial(args.serial)
         else:
             if 'PEBBLE_PHONE' in os.environ:
                 return self._connect_phone(os.environ['PEBBLE_PHONE'])
@@ -107,6 +111,8 @@ class PebbleCommand(BaseCommand):
                 return self._connect_emulator(platform)
             elif os.environ.get('PEBBLE_EMULATOR', False):
                 return self._connect_cloudpebble()
+            elif 'PEBBLE_BT_SERIAL' in os.environ:
+                return self._connect_serial(os.environ['PEBBLE_BT_SERIAL'])
         raise ToolError("No pebble connection specified.")
 
     def _connect_phone(self, phone):
@@ -150,6 +156,12 @@ class PebbleCommand(BaseCommand):
 
     def _connect_cloudpebble(self):
         connection = PebbleConnection(CloudPebbleTransport(), **self._get_debug_args())
+        connection.connect()
+        connection.run_async()
+        return connection
+
+    def _connect_serial(self, device):
+        connection = PebbleConnection(SerialTransport(device), **self._get_debug_args())
         connection.connect()
         connection.run_async()
         return connection
