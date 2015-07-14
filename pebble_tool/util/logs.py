@@ -11,7 +11,6 @@ import time
 import uuid
 import sys
 
-from functools import partial
 from collections import OrderedDict
 from libpebble2.protocol.logs import AppLogMessage, AppLogShippingControl
 from libpebble2.communication.transports.websocket import MessageTargetPhone
@@ -20,7 +19,8 @@ from libpebble2.communication.transports.websocket.protocol import WebSocketPhon
 from pebble_tool.exceptions import PebbleProjectException, MissingSDK
 from pebble_tool.sdk import get_arm_tools_path
 from pebble_tool.sdk.project import PebbleProject
-import colors
+from colorama import Fore, Back, Style
+
 
 logger = logging.getLogger("pebble_tool.util.logs")
 
@@ -28,15 +28,15 @@ logger = logging.getLogger("pebble_tool.util.logs")
 class PebbleLogPrinter(object):
     colour_scheme = OrderedDict([
         # LOG_LEVEL_DEBUG_VERBOSE
-        (255, colors.cyan),
+        (255, Fore.CYAN),
         # LOG_LEVEL_DEBUG
-        (200, colors.magenta),
+        (200, Fore.MAGENTA),
         # LOG_LEVEL_INFO
-        (100, None),
+        (100, ""),
         # LOG_LEVEL_WARNING
-        (50, colors.red),
+        (50, Style.BRIGHT + Fore.RED),
         # LOG_LEVEL_ERROR
-        (1, partial(colors.color, fg='white', bg='red')),
+        (1, Back.RED + Style.BRIGHT + Fore.WHITE),
         # LOG_LEVEL_ALWAYS
         (0, None)])
     phone_colour = None
@@ -46,7 +46,6 @@ class PebbleLogPrinter(object):
         :param pebble: libpebble2.communication.PebbleConnection
         :param force_colour: Bool
         """
-        self.test_colours = list(self.colour_scheme)
         self.pebble = pebble
         self.print_with_colour = force_colour if force_colour is not None else sys.stdout.isatty()
         pebble.send_packet(AppLogShippingControl(enable=True))
@@ -61,7 +60,7 @@ class PebbleLogPrinter(object):
     def _print(self, packet, message):
         colour = self._get_colour(packet)
         if colour:
-            print(colour(message))
+            print(colour + message + Style.RESET_ALL)
         else:
             print(message)
 
@@ -76,8 +75,6 @@ class PebbleLogPrinter(object):
                 except KeyError:
                     # Select the next lowest level if the exact level is not in the color scheme
                     colour = next(self.colour_scheme[level] for level in self.colour_scheme if packet.level >= level)
-        if len(self.test_colours) > 0:
-            colour = self.colour_scheme[self.test_colours.pop()]
         return colour
 
     def wait(self):
