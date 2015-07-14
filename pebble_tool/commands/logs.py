@@ -11,7 +11,7 @@ class LogsCommand(PebbleCommand):
 
     def __call__(self, args):
         super(LogsCommand, self).__call__(args)
-        force_colour = args.colour if args.colour != args.no_colour else None
+        force_colour = args.color if args.color != args.no_color else None
         PebbleLogPrinter(self.pebble, force_colour=force_colour).wait()
 
     @classmethod
