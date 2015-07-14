@@ -44,7 +44,8 @@ class ScreenshotCommand(PebbleCommand):
         filename = self._generate_filename() if args.filename is None else args.filename
         png.from_array(image, mode='RGB;8').save(filename)
         print("Saved screenshot to {}".format(filename))
-        self._open(os.path.abspath(filename))
+        if not args.no_open:
+            self._open(os.path.abspath(filename))
 
     def _handle_progress(self, progress, total):
         if not self.started:
@@ -135,4 +136,5 @@ class ScreenshotCommand(PebbleCommand):
         parser = super(ScreenshotCommand, cls).add_parser(parser)
         parser.add_argument('filename', nargs='?', type=str, help="Filename of screenshot")
         parser.add_argument('--no-correction', action="store_true", help="Disable colour correction.")
+        parser.add_argument('--no-open', action="store_true", help="Disable automatic opening of image.")
         return parser
