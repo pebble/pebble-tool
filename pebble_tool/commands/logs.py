@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 __author__ = 'katharine'
 
-import argparse
 from .base import PebbleCommand
 from pebble_tool.util.logs import PebbleLogPrinter
 

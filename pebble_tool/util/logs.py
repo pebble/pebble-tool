@@ -36,17 +36,17 @@ class PebbleLogPrinter(object):
         # LOG_LEVEL_WARNING
         (50, colors.red),
         # LOG_LEVEL_ERROR
-        (1, partial(colors.color, fg='red', style='negative')),
+        (1, partial(colors.color, fg='white', bg='red')),
         # LOG_LEVEL_ALWAYS
         (0, None)])
-    phone_colour = colors.blue
-
+    phone_colour = None
 
     def __init__(self, pebble, force_colour=None):
         """
         :param pebble: libpebble2.communication.PebbleConnection
         :param force_colour: Bool
         """
+        self.test_colours = list(self.colour_scheme)
         self.pebble = pebble
         self.print_with_colour = force_colour if force_colour is not None else sys.stdout.isatty()
         pebble.send_packet(AppLogShippingControl(enable=True))
@@ -56,7 +56,6 @@ class PebbleLogPrinter(object):
             os.environ['PATH'] += ":{}".format(get_arm_tools_path())
         except MissingSDK:
             pass
-
 
     def _print(self, packet, message):
         colour = self._get_colour(packet)
@@ -76,7 +75,8 @@ class PebbleLogPrinter(object):
                 except KeyError:
                     # Select the next lowest level if the exact level is not in the color scheme
                     colour = next(self.colour_scheme[level] for level in self.colour_scheme if packet.level >= level)
-
+        if len(self.test_colours) > 0:
+            colour = self.colour_scheme[self.test_colours.pop()]
         return colour
 
     def wait(self):
@@ -94,13 +94,13 @@ class PebbleLogPrinter(object):
         # We do actually know the original timestamp of the log (it's in packet.timestamp), but if we
         # use it that it meshes oddly with the JS logs, which must use the user's system time.
         self._print(packet, "[{}] {}:{}> {}".format(datetime.now().strftime("%H:%M:%S"), packet.filename,
-                                      packet.line_number, packet.message))
+                                                    packet.line_number, packet.message))
         self._maybe_handle_crash(packet)
 
     def handle_phone_log(self, packet):
         assert isinstance(packet, WebSocketPhoneAppLog)
         self._print(packet, "[{}] javascript> {}".format(datetime.now().strftime("%H:%M:%S"),
-                                               packet.payload.decode('utf-8')))
+                                                         packet.payload.decode('utf-8')))
 
     def _maybe_handle_crash(self, packet):
         result = re.search(r"(App|Worker) fault! {([0-9a-f-]{36})} PC: (\S+) LR: (\S+)", packet.message)
