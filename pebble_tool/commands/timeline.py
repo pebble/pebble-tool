@@ -51,10 +51,11 @@ class InsertPinCommand(PebbleCommand):
         pin['source'] = 'sdk'
         pin['dataSource'] = 'sandbox-uuid:%s' % app_uuid
 
-        PebbleLogPrinter(self.pebble)
+        printer = PebbleLogPrinter(self.pebble)
         self.pebble.transport.send_packet(WebSocketTimelinePin(data=InsertPin(json=json.dumps(pin))),
                                           target=MessageTargetPhone())
         result = self.pebble.read_transport_message(MessageTargetPhone, WebSocketTimelineResponse).status
+        printer.stop()
         if result != WebSocketTimelineResponse.Status.Succeeded:
             raise ToolError("Sending pin failed.")
 

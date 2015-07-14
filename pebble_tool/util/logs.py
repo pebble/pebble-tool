@@ -49,9 +49,12 @@ class PebbleLogPrinter(object):
         self.pebble = pebble
         self.print_with_colour = force_colour if force_colour is not None else sys.stdout.isatty()
         pebble.send_packet(AppLogShippingControl(enable=True))
-        pebble.register_endpoint(AppLogMessage, self.handle_watch_log)
-        pebble.register_transport_endpoint(MessageTargetPhone, WebSocketPhoneAppLog, self.handle_phone_log)
-        pebble.register_transport_endpoint(MessageTargetPhone, WebSocketConnectionStatusUpdate, self.handle_connection)
+        self.handles = []
+        self.handles.append(pebble.register_endpoint(AppLogMessage, self.handle_watch_log))
+        self.handles.append(pebble.register_transport_endpoint(MessageTargetPhone, WebSocketPhoneAppLog,
+                                                               self.handle_phone_log))
+        self.handles.append(pebble.register_transport_endpoint(MessageTargetPhone, WebSocketConnectionStatusUpdate,
+                                                               self.handle_connection))
         try:
             os.environ['PATH'] += ":{}".format(get_arm_tools_path())
         except MissingSDK:
@@ -79,10 +82,15 @@ class PebbleLogPrinter(object):
             while self.pebble.connected:
                 time.sleep(1)
         except KeyboardInterrupt:
-            self.pebble.send_packet(AppLogShippingControl(enable=False))
+            self.stop()
             return
         else:
             print("Disconnected.")
+
+    def stop(self):
+        for handle in self.handles:
+            self.pebble.unregister_endpoint(handle)
+        self.pebble.send_packet(AppLogShippingControl(enable=False))
 
     def handle_watch_log(self, packet):
         assert isinstance(packet, AppLogMessage)
