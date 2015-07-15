@@ -54,7 +54,7 @@ class EmuAccelCommand(PebbleCommand):
                 'none': [QemuAccelSample(x=0, y=0, z=0)]
             }[args.motion]
         else:
-            raise Exception("No filename specified")
+            raise ToolError("No accel filename or motion specified")
 
         max_accel_samples = 255
         if len(samples) > max_accel_samples:
@@ -97,22 +97,21 @@ class EmuAppConfigCommand(PebbleCommand):
         super(EmuAppConfigCommand, self).__call__(args)
         print("Running {}...".format(self.command))
 
-        if not args.file:
-            try:
-                if isinstance(self.pebble.transport, ManagedEmulatorTransport):
-                    self.pebble.transport.send_packet(WebSocketPhonesimAppConfig(config=AppConfigSetup()),
-                                                      target=MessageTargetPhone())
-                    response = self.pebble.read_transport_message(MessageTargetPhone, WebSocketPhonesimConfigResponse)
-                    print(response)
-                else:
-                    raise ToolError("App config is only supported over phonesim connections")
-            except IOError as e:
-                raise ToolError(str(e))
-            config_url = response.url
-        else:
-            config_url = "file://{}".format(os.path.realpath(args.file))
+        try:
+            if isinstance(self.pebble.transport, ManagedEmulatorTransport):
+                self.pebble.transport.send_packet(WebSocketPhonesimAppConfig(config=AppConfigSetup()),
+                                                  target=MessageTargetPhone())
+                response = self.pebble.read_transport_message(MessageTargetPhone, WebSocketPhonesimConfigResponse)
+            else:
+                raise ToolError("App config is only supported over phonesim connections")
+        except IOError as e:
+            raise ToolError(str(e))
 
-        print(config_url)
+        if args.file:
+            config_url = "file://{}".format(os.path.realpath(args.file))
+        else:
+            config_url = response.config.data
+
         browser = BrowserController()
         browser.open_config_page(config_url, self.handle_config_close)
 
