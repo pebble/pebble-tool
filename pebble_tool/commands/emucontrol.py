@@ -1,6 +1,7 @@
 from __future__ import absolute_import, print_function
 __author__ = 'cherie'
 
+import argparse
 from libpebble2.communication.transports.websocket import MessageTargetPhone
 from libpebble2.communication.transports.websocket.protocol import AppConfigCancelled, AppConfigResponse, AppConfigSetup
 from libpebble2.communication.transports.websocket.protocol import WebSocketPhonesimAppConfig
@@ -15,22 +16,33 @@ from pebble_tool.sdk.emulator import ManagedEmulatorTransport
 from pebble_tool.util.browser import BrowserController
 
 
+def send_data_to_qemu(transport, protocol, data):
+    try:
+        if isinstance(transport, ManagedEmulatorTransport):
+            transport.send_packet(WebSocketRelayQemu(protocol=protocol, data=data.serialise()),
+                                  target=MessageTargetPhone())
+        elif isinstance(transport, QemuTransport):
+            transport.send_packet(data, target=MessageTargetQemu())
+        else:
+            raise ToolError("Invalid transport layer for Pebble command")
+    except IOError as e:
+        raise ToolError(str(e))
+
+
 class EmuAccelCommand(PebbleCommand):
     command = 'emu-accel'
 
     def __call__(self, args):
         super(EmuAccelCommand, self).__call__(args)
-        print("Running {}...".format(self.command))
         if args.motion == 'custom' and args.file is not None:
             samples = []
-            with open(args.file) as f:
-                for line in f:
-                    line = line.strip()
-                    if line:
-                        sample = []
-                        for x in line.split(','):
-                            sample.append(int(x))
-                        samples.append(QemuAccelSample(x=sample[0], y=sample[1], z=sample[2]))
+            for line in args.file:
+                line = line.strip()
+                if line:
+                    sample = []
+                    for x in line.split(','):
+                        sample.append(int(x))
+                    samples.append(QemuAccelSample(x=sample[0], y=sample[1], z=sample[2]))
         elif args.motion != 'custom':
             samples = {
                 'tilt-left': [QemuAccelSample(x=-500, y=0, z=-900),
@@ -60,20 +72,10 @@ class EmuAccelCommand(PebbleCommand):
         if len(samples) > max_accel_samples:
             raise ToolError("Cannot send {} samples. The max number of accel samples that can be sent at a time is "
                             "{}.".format(len(samples), max_accel_samples))
-        accel_input = QemuAccel(samples=samples, count=len(samples))
+        accel_input = QemuAccel(samples=samples)
         packet = QemuPacket(data=accel_input)
         packet.serialise()
-
-        try:
-            if isinstance(self.pebble.transport, ManagedEmulatorTransport):
-                self.pebble.transport.send_packet(WebSocketRelayQemu(protocol=packet.protocol,
-                                                                     data=accel_input.serialise()),
-                                                  target=MessageTargetPhone())
-            elif isinstance(self.pebble.transport, QemuTransport):
-                self.pebble.transport.send_packet(accel_input, target=MessageTargetQemu())
-                # target, response = self.pebble.transport.read_packet()
-        except IOError as e:
-            raise ToolError(str(e))
+        send_data_to_qemu(self.pebble.transport, packet.protocol, accel_input)
 
     @classmethod
     def add_parser(cls, parser):
@@ -84,9 +86,9 @@ class EmuAccelCommand(PebbleCommand):
                                      'custom'],
                             help="The type of accelerometer motion to send to the emulator. If using an accel file, "
                                  "specify 'custom' and then specify the filename using the '--file' option")
-        parser.add_argument('--file', help="Filename of the file containing custom accel data. Each line of this text "
-                                           "file should contain the comma-separated x, y, and z readings. (e.g. "
-                                           "'-24, -88, -1032')")
+        parser.add_argument('file', nargs='?', type=argparse.FileType('r'), default=None,
+                            help="Filename of the file containing custom accel data. Each line of this text file "
+                                 "should contain the comma-separated x, y, and z readings. (e.g. '-24, -88, -1032')")
         return parser
 
 
@@ -95,8 +97,6 @@ class EmuAppConfigCommand(PebbleCommand):
 
     def __call__(self, args):
         super(EmuAppConfigCommand, self).__call__(args)
-        print("Running {}...".format(self.command))
-
         try:
             if isinstance(self.pebble.transport, ManagedEmulatorTransport):
                 self.pebble.transport.send_packet(WebSocketPhonesimAppConfig(config=AppConfigSetup()),
@@ -108,7 +108,7 @@ class EmuAppConfigCommand(PebbleCommand):
             raise ToolError(str(e))
 
         if args.file:
-            config_url = "file://{}".format(os.path.realpath(args.file))
+            config_url = "file://{}".format(os.path.expanduser(os.path.realpath(args.file)))
         else:
             config_url = response.config.data
 
@@ -135,25 +135,15 @@ class EmuBatteryCommand(PebbleCommand):
 
     def __call__(self, args):
         super(EmuBatteryCommand, self).__call__(args)
-        print("Running {}...".format(self.command))
-        battery_input = QemuBattery(percent=args.pct, charging=args.charging)
+        battery_input = QemuBattery(percent=args.percent, charging=args.charging)
         packet = QemuPacket(data=battery_input)
         packet.serialise()
-
-        try:
-            if isinstance(self.pebble.transport, ManagedEmulatorTransport):
-                self.pebble.transport.send_packet(WebSocketRelayQemu(protocol=packet.protocol,
-                                                                     data=battery_input.serialise()),
-                                                  target=MessageTargetPhone())
-            elif isinstance(self.pebble.transport, QemuTransport):
-                self.pebble.transport.send_packet(battery_input, target=MessageTargetQemu())
-        except IOError as e:
-            raise ToolError(str(e))
+        send_data_to_qemu(self.pebble.transport, packet.protocol, battery_input)
 
     @classmethod
     def add_parser(cls, parser):
         parser = super(EmuBatteryCommand, cls).add_parser(parser)
-        parser.add_argument('--pct', type=int, default=80,
+        parser.add_argument('--percent', type=int, default=80,
                             help="Set the percentage battery remaining (0 to 100) on the emulator")
         parser.add_argument('--charging', action='store_true', help="Set the Pebble emulator to charging mode")
         return parser
@@ -164,22 +154,12 @@ class EmuButtonCommand(PebbleCommand):
 
     def __call__(self, args):
         super(EmuButtonCommand, self).__call__(args)
-        print("Running {}...".format(self.command))
         state = {'back': QemuButton.Button.Back, 'up': QemuButton.Button.Up, 'select': QemuButton.Button.Select,
                  'down': QemuButton.Button.Down}[args.button]
         button_input = QemuButton(state=state)
         packet = QemuPacket(data=button_input)
         packet.serialise()
-
-        try:
-            if isinstance(self.pebble.transport, ManagedEmulatorTransport):
-                self.pebble.transport.send_packet(WebSocketRelayQemu(protocol=packet.protocol,
-                                                                     data=button_input.serialise()),
-                                                  target=MessageTargetPhone())
-            elif isinstance(self.pebble.transport, QemuTransport):
-                self.pebble.transport.send_packet(button_input, target=MessageTargetQemu())
-        except IOError as e:
-            raise ToolError(str(e))
+        send_data_to_qemu(self.pebble.transport, packet.protocol, button_input)
 
     @classmethod
     def add_parser(cls, parser):
@@ -194,21 +174,11 @@ class EmuBluetoothConnectionCommand(PebbleCommand):
 
     def __call__(self, args):
         super(EmuBluetoothConnectionCommand, self).__call__(args)
-        print("Running {}...".format(self.command))
         connected = args.connected == 'yes'
         bt_input = QemuBluetoothConnection(connected=connected)
         packet = QemuPacket(data=bt_input)
         packet.serialise()
-
-        try:
-            if isinstance(self.pebble.transport, ManagedEmulatorTransport):
-                self.pebble.transport.send_packet(WebSocketRelayQemu(protocol=packet.protocol,
-                                                                     data=bt_input.serialise()),
-                                                  target=MessageTargetPhone())
-            elif isinstance(self.pebble.transport, QemuTransport):
-                self.pebble.transport.send_packet(bt_input, target=MessageTargetQemu())
-        except IOError as e:
-            raise ToolError(str(e))
+        send_data_to_qemu(self.pebble.transport, packet.protocol, bt_input)
 
     @classmethod
     def add_parser(cls, parser):
@@ -223,40 +193,35 @@ class EmuCompassCommand(PebbleCommand):
 
     def __call__(self, args):
         super(EmuCompassCommand, self).__call__(args)
-        print("Running {}...".format(self.command))
-        if args.calib == 'invalid':
+        calibrated = QemuCompass.Calibration.Complete
+        if args.uncalibrated:
             calibrated = QemuCompass.Calibration.Uncalibrated
-        elif args.calib == 'calibrating':
+        elif args.calibrating:
             calibrated = QemuCompass.Calibration.Refining
-        else:
-            calibrated = QemuCompass.Calibration.Complete
+        elif args.calibrated:
+            pass
 
         try:
-            # heading = (heading_in_degrees * max_angle_radians + 180) / max_angle_degrees
-            heading = (args.heading * 0x10000 + 180) / 360
+            max_angle_radians = 0x10000
+            max_angle_degrees = 360
+            offset = 180
+            heading = (args.heading * max_angle_radians + offset) / max_angle_degrees
         except TypeError:
             heading = None
 
         compass_input = QemuCompass(heading=heading, calibrated=calibrated)
         packet = QemuPacket(data=compass_input)
         packet.serialise()
-
-        try:
-            if isinstance(self.pebble.transport, ManagedEmulatorTransport):
-                self.pebble.transport.send_packet(WebSocketRelayQemu(protocol=packet.protocol,
-                                                                     data=compass_input.serialise()),
-                                                  target=MessageTargetPhone())
-            elif isinstance(self.pebble.transport, QemuTransport):
-                self.pebble.transport.send_packet(compass_input, target=MessageTargetQemu())
-        except IOError as e:
-            raise ToolError(str(e))
+        send_data_to_qemu(self.pebble.transport, packet.protocol, compass_input)
 
     @classmethod
     def add_parser(cls, parser):
         parser = super(EmuCompassCommand, cls).add_parser(parser)
         parser.add_argument('--heading', type=int, default=0, help="Set the emulator compass heading (0 to 359)")
-        parser.add_argument('--calib', choices=['invalid', 'calibrating', 'calibrated'], default='calibrated',
-                            help="Set the emulator compass calibration status")
+        calib_options = parser.add_mutually_exclusive_group()
+        calib_options.add_argument('--uncalibrated', action='store_true', help="Set compass to uncalibrated")
+        calib_options.add_argument('--calibrating', action='store_true', help="Set compass to calibrating mode")
+        calib_options.add_argument('--calibrated', action='store_true', help="Set compass to calibrated")
         return parser
 
 
@@ -265,7 +230,6 @@ class EmuTapCommand(PebbleCommand):
 
     def __call__(self, args):
         super(EmuTapCommand, self).__call__(args)
-        print("Running {}...".format(self.command))
         direction = 1 if args.direction.endswith('+') else -1
 
         if args.direction.startswith('x'):
@@ -280,16 +244,7 @@ class EmuTapCommand(PebbleCommand):
         tap_input = QemuTap(axis=axis, direction=direction)
         packet = QemuPacket(data=tap_input)
         packet.serialise()
-
-        try:
-            if isinstance(self.pebble.transport, ManagedEmulatorTransport):
-                self.pebble.transport.send_packet(WebSocketRelayQemu(protocol=packet.protocol,
-                                                                     data=tap_input.serialise()),
-                                                  target=MessageTargetPhone())
-            elif isinstance(self.pebble.transport, QemuTransport):
-                self.pebble.transport.send_packet(tap_input, target=MessageTargetQemu())
-        except IOError as e:
-            raise ToolError(str(e))
+        send_data_to_qemu(self.pebble.transport, packet.protocol, tap_input)
 
     @classmethod
     def add_parser(cls, parser):
