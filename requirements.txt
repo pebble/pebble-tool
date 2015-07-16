@@ -1,4 +1,4 @@
-libpebble2==0.0.3
+libpebble2==0.0.4
 enum34==1.0.4
 httplib2==0.9.1
 oauth2client==1.4.11
