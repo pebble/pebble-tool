@@ -17,11 +17,10 @@ from pebble_tool.util.browser import BrowserController
 
 
 def send_data_to_qemu(transport, data):
-    packet = QemuPacket(data=data)
-    packet.serialise()
-
     try:
         if isinstance(transport, ManagedEmulatorTransport):
+            packet = QemuPacket(data=data)
+            packet.serialise()
             transport.send_packet(WebSocketRelayQemu(protocol=packet.protocol, data=data.serialise()),
                                   target=MessageTargetPhone())
         elif isinstance(transport, QemuTransport):
@@ -109,7 +108,7 @@ class EmuAppConfigCommand(PebbleCommand):
             raise ToolError(str(e))
 
         if args.file:
-            config_url = "file://{}".format(os.path.expanduser(os.path.realpath(args.file)))
+            config_url = "file://{}".format(os.path.realpath(os.path.expanduser(args.file)))
         else:
             config_url = response.config.data
 
@@ -232,7 +231,7 @@ class EmuTapCommand(PebbleCommand):
         elif args.direction.startswith('z'):
             axis = QemuTap.Axis.Z
         else:
-            raise ToolError("Nice try, Pebble doesn't operate in 4-D space.")
+            raise ToolError("Nice try, but Pebble doesn't operate in 4-D space.")
 
         tap_input = QemuTap(axis=axis, direction=direction)
         send_data_to_qemu(self.pebble.transport, tap_input)
