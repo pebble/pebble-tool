@@ -16,15 +16,18 @@ from pebble_tool.sdk.emulator import ManagedEmulatorTransport
 from pebble_tool.util.browser import BrowserController
 
 
-def send_data_to_qemu(transport, protocol, data):
+def send_data_to_qemu(transport, data):
+    packet = QemuPacket(data=data)
+    packet.serialise()
+
     try:
         if isinstance(transport, ManagedEmulatorTransport):
-            transport.send_packet(WebSocketRelayQemu(protocol=protocol, data=data.serialise()),
+            transport.send_packet(WebSocketRelayQemu(protocol=packet.protocol, data=data.serialise()),
                                   target=MessageTargetPhone())
         elif isinstance(transport, QemuTransport):
             transport.send_packet(data, target=MessageTargetQemu())
         else:
-            raise ToolError("Invalid transport layer for Pebble command")
+            raise ToolError("This command can only be run with an emulator.")
     except IOError as e:
         raise ToolError(str(e))
 
@@ -66,16 +69,14 @@ class EmuAccelCommand(PebbleCommand):
                 'none': [QemuAccelSample(x=0, y=0, z=0)]
             }[args.motion]
         else:
-            raise ToolError("No accel filename or motion specified")
+            raise ToolError("No accel filename or motion specified.")
 
         max_accel_samples = 255
         if len(samples) > max_accel_samples:
             raise ToolError("Cannot send {} samples. The max number of accel samples that can be sent at a time is "
                             "{}.".format(len(samples), max_accel_samples))
         accel_input = QemuAccel(samples=samples)
-        packet = QemuPacket(data=accel_input)
-        packet.serialise()
-        send_data_to_qemu(self.pebble.transport, packet.protocol, accel_input)
+        send_data_to_qemu(self.pebble.transport, accel_input)
 
     @classmethod
     def add_parser(cls, parser):
@@ -103,7 +104,7 @@ class EmuAppConfigCommand(PebbleCommand):
                                                   target=MessageTargetPhone())
                 response = self.pebble.read_transport_message(MessageTargetPhone, WebSocketPhonesimConfigResponse)
             else:
-                raise ToolError("App config is only supported over phonesim connections")
+                raise ToolError("App config is only supported over phonesim connections.")
         except IOError as e:
             raise ToolError(str(e))
 
@@ -136,9 +137,7 @@ class EmuBatteryCommand(PebbleCommand):
     def __call__(self, args):
         super(EmuBatteryCommand, self).__call__(args)
         battery_input = QemuBattery(percent=args.percent, charging=args.charging)
-        packet = QemuPacket(data=battery_input)
-        packet.serialise()
-        send_data_to_qemu(self.pebble.transport, packet.protocol, battery_input)
+        send_data_to_qemu(self.pebble.transport, battery_input)
 
     @classmethod
     def add_parser(cls, parser):
@@ -157,9 +156,7 @@ class EmuButtonCommand(PebbleCommand):
         state = {'back': QemuButton.Button.Back, 'up': QemuButton.Button.Up, 'select': QemuButton.Button.Select,
                  'down': QemuButton.Button.Down}[args.button]
         button_input = QemuButton(state=state)
-        packet = QemuPacket(data=button_input)
-        packet.serialise()
-        send_data_to_qemu(self.pebble.transport, packet.protocol, button_input)
+        send_data_to_qemu(self.pebble.transport, button_input)
 
     @classmethod
     def add_parser(cls, parser):
@@ -176,9 +173,7 @@ class EmuBluetoothConnectionCommand(PebbleCommand):
         super(EmuBluetoothConnectionCommand, self).__call__(args)
         connected = args.connected == 'yes'
         bt_input = QemuBluetoothConnection(connected=connected)
-        packet = QemuPacket(data=bt_input)
-        packet.serialise()
-        send_data_to_qemu(self.pebble.transport, packet.protocol, bt_input)
+        send_data_to_qemu(self.pebble.transport, bt_input)
 
     @classmethod
     def add_parser(cls, parser):
@@ -210,9 +205,7 @@ class EmuCompassCommand(PebbleCommand):
             heading = None
 
         compass_input = QemuCompass(heading=heading, calibrated=calibrated)
-        packet = QemuPacket(data=compass_input)
-        packet.serialise()
-        send_data_to_qemu(self.pebble.transport, packet.protocol, compass_input)
+        send_data_to_qemu(self.pebble.transport, compass_input)
 
     @classmethod
     def add_parser(cls, parser):
@@ -239,12 +232,10 @@ class EmuTapCommand(PebbleCommand):
         elif args.direction.startswith('z'):
             axis = QemuTap.Axis.Z
         else:
-            raise ToolError("Nice try, Pebble doesn't operate in 4-D space")
+            raise ToolError("Nice try, Pebble doesn't operate in 4-D space.")
 
         tap_input = QemuTap(axis=axis, direction=direction)
-        packet = QemuPacket(data=tap_input)
-        packet.serialise()
-        send_data_to_qemu(self.pebble.transport, packet.protocol, tap_input)
+        send_data_to_qemu(self.pebble.transport, tap_input)
 
     @classmethod
     def add_parser(cls, parser):
