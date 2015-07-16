@@ -4,6 +4,7 @@ import urlparse
 import urllib
 import webbrowser
 
+
 class BrowserController(object):
     def __init__(self):
         self.port = None
