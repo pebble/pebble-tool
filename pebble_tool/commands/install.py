@@ -4,10 +4,10 @@ __author__ = 'katharine'
 import os
 import os.path
 from progressbar import ProgressBar, Bar, FileTransferSpeed, Timer, Percentage
-import time
 
 from libpebble2.communication.transports.websocket import WebsocketTransport, MessageTargetPhone
 from libpebble2.communication.transports.websocket.protocol import WebSocketInstallBundle, WebSocketInstallStatus
+from libpebble2.exceptions import TimeoutError
 from libpebble2.services.install import AppInstaller
 
 from .base import PebbleCommand
@@ -55,7 +55,10 @@ class InstallCommand(PebbleCommand):
         with open(pbw) as f:
             print("Installing app...")
             pebble.transport.send_packet(WebSocketInstallBundle(pbw=f.read()), target=MessageTargetPhone())
-            result = pebble.read_transport_message(MessageTargetPhone, WebSocketInstallStatus)
+            try:
+                result = pebble.read_transport_message(MessageTargetPhone, WebSocketInstallStatus, timeout=300)
+            except TimeoutError:
+                raise ToolError("Timed out waiting for install confirmation.")
             if result.status != WebSocketInstallStatus.StatusCode.Success:
                 raise ToolError("App install failed.")
             else:
