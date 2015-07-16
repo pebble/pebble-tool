@@ -32,6 +32,7 @@ def send_data_to_qemu(transport, data):
 
 
 class EmuAccelCommand(PebbleCommand):
+    """Emulates accelerometer events."""
     command = 'emu-accel'
 
     def __call__(self, args):
@@ -93,6 +94,7 @@ class EmuAccelCommand(PebbleCommand):
 
 
 class EmuAppConfigCommand(PebbleCommand):
+    """Shows the app configuration page, if one exists."""
     command = 'emu-app-config'
 
     def __call__(self, args):
@@ -131,6 +133,7 @@ class EmuAppConfigCommand(PebbleCommand):
 
 
 class EmuBatteryCommand(PebbleCommand):
+    """Sets the emulated battery level and charging state."""
     command = 'emu-battery'
 
     def __call__(self, args):
@@ -147,25 +150,8 @@ class EmuBatteryCommand(PebbleCommand):
         return parser
 
 
-class EmuButtonCommand(PebbleCommand):
-    command = 'emu-button'
-
-    def __call__(self, args):
-        super(EmuButtonCommand, self).__call__(args)
-        state = {'back': QemuButton.Button.Back, 'up': QemuButton.Button.Up, 'select': QemuButton.Button.Select,
-                 'down': QemuButton.Button.Down}[args.button]
-        button_input = QemuButton(state=state)
-        send_data_to_qemu(self.pebble.transport, button_input)
-
-    @classmethod
-    def add_parser(cls, parser):
-        parser = super(EmuButtonCommand, cls).add_parser(parser)
-        parser.add_argument('button', choices=['back', 'up', 'select', 'down'], default=None,
-                            help="Send a button press to the emulator")
-        return parser
-
-
 class EmuBluetoothConnectionCommand(PebbleCommand):
+    """Sets the emulated Bluetooth connectivity state."""
     command = 'emu-bt-connection'
 
     def __call__(self, args):
@@ -183,6 +169,7 @@ class EmuBluetoothConnectionCommand(PebbleCommand):
 
 
 class EmuCompassCommand(PebbleCommand):
+    """Sets the emulated compass heading and calibration state."""
     command = 'emu-compass'
 
     def __call__(self, args):
@@ -218,6 +205,7 @@ class EmuCompassCommand(PebbleCommand):
 
 
 class EmuTapCommand(PebbleCommand):
+    """Emulates a tap."""
     command = 'emu-tap'
 
     def __call__(self, args):
