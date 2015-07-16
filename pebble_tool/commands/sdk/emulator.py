@@ -59,3 +59,4 @@ class WipeCommand(BaseCommand):
         parser = super(WipeCommand, cls).add_parser(parser)
         parser.add_argument('--everything', action='store_true',
                             help="Deletes all data from all versions. Also logs you out.")
+        return parser
