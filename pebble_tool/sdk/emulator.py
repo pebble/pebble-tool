@@ -10,6 +10,7 @@ import os
 import os.path
 import platform
 import shutil
+import signal
 import socket
 import subprocess
 import tempfile
@@ -57,8 +58,10 @@ class ManagedEmulatorTransport(WebsocketTransport):
 
     def _find_ports(self):
         info = get_emulator_info(self.platform)
+        qemu_running = False
         if info is not None:
             if self._is_pid_running(info['qemu']['pid']):
+                qemu_running = True
                 self.qemu_port = info['qemu']['port']
                 self.qemu_serial_port = info['qemu']['serial']
                 self.qemu_pid = info['qemu']['pid']
@@ -66,8 +69,13 @@ class ManagedEmulatorTransport(WebsocketTransport):
                 self.qemu_pid = None
 
             if self._is_pid_running(info['pypkjs']['pid']):
-                self.pypkjs_port = info['pypkjs']['port']
-                self.pypkjs_pid = info['pypkjs']['pid']
+                if qemu_running:
+                    self.pypkjs_port = info['pypkjs']['port']
+                    self.pypkjs_pid = info['pypkjs']['pid']
+                else:
+                    logger.info("pypkjs is alive, but qemu is not, so we're killing it.")
+                    os.kill(info['pypkjs']['pid'], signal.SIGKILL)
+                    self.pypkjs_pid = None
             else:
                 self.pypkjs_pid = None
         else:
