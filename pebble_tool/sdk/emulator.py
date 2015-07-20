@@ -257,3 +257,10 @@ class ManagedEmulatorTransport(WebsocketTransport):
             else:
                 raise
         return True
+
+    @classmethod
+    def is_platform_alive(cls, platform):
+        info = get_emulator_info(platform)
+        if info is None:
+            return False
+        return cls._is_pid_running(info['pypkjs']['pid']) and cls._is_pid_running(info['pypkjs']['pid'])

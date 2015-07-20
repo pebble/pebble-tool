@@ -16,7 +16,7 @@ from libpebble2.protocol.system import TimeMessage, SetUTC
 
 from pebble_tool.exceptions import ToolError
 from pebble_tool.sdk import pebble_platforms
-from pebble_tool.sdk.emulator import ManagedEmulatorTransport
+from pebble_tool.sdk.emulator import ManagedEmulatorTransport, get_emulator_info
 from pebble_tool.sdk.cloudpebble import CloudPebbleTransport
 from pebble_tool.util.analytics import post_event
 
@@ -113,6 +113,15 @@ class PebbleCommand(BaseCommand):
                 return self._connect_cloudpebble()
             elif 'PEBBLE_BT_SERIAL' in os.environ:
                 return self._connect_serial(os.environ['PEBBLE_BT_SERIAL'])
+            else:
+                running = []
+                for platform in pebble_platforms:
+                    if ManagedEmulatorTransport.is_platform_alive(platform):
+                        running.append(platform)
+                if len(running) == 1:
+                    return self._connect_emulator(running[0])
+                elif len(running) > 1:
+                    raise ToolError("Multiple emulators are running; you must specify which to use.")
         raise ToolError("No pebble connection specified.")
 
     def _connect_phone(self, phone):
