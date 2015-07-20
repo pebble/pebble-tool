@@ -29,7 +29,6 @@ class PebbleAnalytics(threading.Thread):
 
     def __init__(self):
         self.mark = threading.Event()
-        self.pending_filename = os.path.join(get_persist_dir(), "pending_analytics.json")
         self.should_run = True
         self.file_lock = threading.Lock()
         try:
@@ -41,6 +40,10 @@ class PebbleAnalytics(threading.Thread):
         super(PebbleAnalytics, self).__init__()
         self.daemon = True
         self.start()
+
+    @property
+    def pending_filename(self):
+        return os.path.join(get_persist_dir(), "pending_analytics.json")
 
     def run(self):
         should_track = self._should_track()
