@@ -34,6 +34,7 @@ def send_data_to_qemu(transport, data):
 class EmuAccelCommand(PebbleCommand):
     """Emulates accelerometer events."""
     command = 'emu-accel'
+    valid_connections = {'qemu', 'emulator'}
 
     def __call__(self, args):
         super(EmuAccelCommand, self).__call__(args)
@@ -96,6 +97,7 @@ class EmuAccelCommand(PebbleCommand):
 class EmuAppConfigCommand(PebbleCommand):
     """Shows the app configuration page, if one exists."""
     command = 'emu-app-config'
+    valid_connections = {'emulator'}
 
     def __call__(self, args):
         super(EmuAppConfigCommand, self).__call__(args)
@@ -135,6 +137,7 @@ class EmuAppConfigCommand(PebbleCommand):
 class EmuBatteryCommand(PebbleCommand):
     """Sets the emulated battery level and charging state."""
     command = 'emu-battery'
+    valid_connections = {'qemu', 'emulator'}
 
     def __call__(self, args):
         super(EmuBatteryCommand, self).__call__(args)
@@ -153,6 +156,7 @@ class EmuBatteryCommand(PebbleCommand):
 class EmuBluetoothConnectionCommand(PebbleCommand):
     """Sets the emulated Bluetooth connectivity state."""
     command = 'emu-bt-connection'
+    valid_connections = {'qemu', 'emulator'}
 
     def __call__(self, args):
         super(EmuBluetoothConnectionCommand, self).__call__(args)
@@ -171,6 +175,7 @@ class EmuBluetoothConnectionCommand(PebbleCommand):
 class EmuCompassCommand(PebbleCommand):
     """Sets the emulated compass heading and calibration state."""
     command = 'emu-compass'
+    valid_connections = {'qemu', 'emulator'}
 
     def __call__(self, args):
         super(EmuCompassCommand, self).__call__(args)
@@ -207,6 +212,7 @@ class EmuCompassCommand(PebbleCommand):
 class EmuTapCommand(PebbleCommand):
     """Emulates a tap."""
     command = 'emu-tap'
+    valid_connections = {'qemu', 'emulator'}
 
     def __call__(self, args):
         super(EmuTapCommand, self).__call__(args)

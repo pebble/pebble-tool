@@ -62,21 +62,29 @@ class BaseCommand(with_metaclass(SelfRegisteringCommand)):
 
 
 class PebbleCommand(BaseCommand):
+    valid_connections = {'phone', 'qemu', 'cloudpebble', 'emulator', 'serial'}
+
     @classmethod
     def _shared_parser(cls):
         parser = argparse.ArgumentParser(add_help=False)
         group = parser.add_mutually_exclusive_group()
-        group.add_argument('--phone', metavar='phone_ip',
-                            help="When using the developer connection, your phone's IP or hostname. "
-                                 "Equivalent to PEBBLE_PHONE.")
-        group.add_argument('--qemu', nargs='?', const='localhost:12344', metavar='host',
-                            help="Use this option to connect directly to a QEMU instance. Equivalent to PEBBLE_QEMU.")
-        group.add_argument('--cloudpebble', action='store_true', help="Use this option to connect to your phone via "
-                                                                       "the CloudPebble connection. Equivalent to "
-                                                                       "PEBBLE_CLOUDPEBBLE.")
-        group.add_argument('--emulator', type=str, help="Launch an emulator. Equivalent to PEBBLE_EMULATOR.",
-                           choices=pebble_platforms)
-        group.add_argument('--serial', type=str, help="Connected directly, given a path to a serial device.")
+        if 'phone' in cls.valid_connections:
+            group.add_argument('--phone', metavar='phone_ip',
+                                help="When using the developer connection, your phone's IP or hostname. "
+                                     "Equivalent to PEBBLE_PHONE.")
+        if 'qemu' in cls.valid_connections:
+            group.add_argument('--qemu', nargs='?', const='localhost:12344', metavar='host',
+                                help="Use this option to connect directly to a QEMU instance. "
+                                     "Equivalent to PEBBLE_QEMU.")
+        if 'cloudpebble' in cls.valid_connections:
+            group.add_argument('--cloudpebble', action='store_true', help="Use this option to connect to your phone via"
+                                                                          " the CloudPebble connection. Equivalent to "
+                                                                          "PEBBLE_CLOUDPEBBLE.")
+        if 'emulator' in cls.valid_connections:
+            group.add_argument('--emulator', type=str, help="Launch an emulator. Equivalent to PEBBLE_EMULATOR.",
+                               choices=pebble_platforms)
+        if 'serial' in cls.valid_connections:
+            group.add_argument('--serial', type=str, help="Connected directly, given a path to a serial device.")
         return super(PebbleCommand, cls)._shared_parser() + [parser]
 
     def __call__(self, args):
@@ -99,21 +107,21 @@ class PebbleCommand(BaseCommand):
         elif args.serial:
             return self._connect_serial(args.serial)
         else:
-            if 'PEBBLE_PHONE' in os.environ:
+            if 'phone' in self.valid_connections and 'PEBBLE_PHONE' in os.environ:
                 return self._connect_phone(os.environ['PEBBLE_PHONE'])
-            elif 'PEBBLE_QEMU' in os.environ:
+            elif 'qemu' in self.valid_connections and 'PEBBLE_QEMU' in os.environ:
                 return self._connect_qemu(os.environ['PEBBLE_QEMU'])
-            elif 'PEBBLE_EMULATOR' in os.environ:
+            elif 'emulator' in self.valid_connections and 'PEBBLE_EMULATOR' in os.environ:
                 platform = os.environ['PEBBLE_EMULATOR']
                 if platform not in pebble_platforms:
                     raise ToolError("PEBBLE_EMULATOR is set to '{}', which is not a valid platform "
                                     "(pick from {})".format(platform, ', '.join(pebble_platforms)))
                 return self._connect_emulator(platform)
-            elif os.environ.get('PEBBLE_EMULATOR', False):
+            elif 'cloudpebble' in self.valid_connections and os.environ.get('PEBBLE_CLOUDPEBBLE', False):
                 return self._connect_cloudpebble()
-            elif 'PEBBLE_BT_SERIAL' in os.environ:
+            elif 'serial' in self.valid_connections and 'PEBBLE_BT_SERIAL' in os.environ:
                 return self._connect_serial(os.environ['PEBBLE_BT_SERIAL'])
-            else:
+            elif 'emulator' in self.valid_connections:
                 running = []
                 for platform in pebble_platforms:
                     if ManagedEmulatorTransport.is_platform_alive(platform):

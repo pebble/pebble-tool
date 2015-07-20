@@ -19,6 +19,7 @@ from pebble_tool.util.logs import PebbleLogPrinter
 class InsertPinCommand(PebbleCommand):
     """Inserts a pin into the timeline."""
     command = 'insert-pin'
+    valid_connections = {'phone', 'cloudpebble', 'emulator'}
 
     def __call__(self, args):
         super(InsertPinCommand, self).__call__(args)
