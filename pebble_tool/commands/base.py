@@ -96,15 +96,15 @@ class PebbleCommand(BaseCommand):
 
     def _connect(self, args):
         self._set_debugging(args.v)
-        if args.phone:
+        if getattr(args, 'phone', None):
             return self._connect_phone(args.phone)
-        elif args.qemu:
+        elif getattr(args, 'qemu', None):
             return self._connect_qemu(args.qemu)
-        elif args.emulator:
+        elif getattr(args, 'emulator', None):
             return self._connect_emulator(args.emulator)
-        elif args.cloudpebble:
+        elif getattr(args, 'cloudpebble', None):
             return self._connect_cloudpebble()
-        elif args.serial:
+        elif getattr(args, 'serial', None):
             return self._connect_serial(args.serial)
         else:
             if 'phone' in self.valid_connections and 'PEBBLE_PHONE' in os.environ:
