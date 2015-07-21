@@ -8,6 +8,7 @@ from libpebble2.communication.transports.websocket.protocol import WebSocketPhon
 from libpebble2.communication.transports.websocket.protocol import WebSocketPhonesimConfigResponse, WebSocketRelayQemu
 from libpebble2.communication.transports.qemu.protocol import *
 from libpebble2.communication.transports.qemu import MessageTargetQemu, QemuTransport
+from libpebble2.exceptions import TimeoutError
 import os
 
 from .base import PebbleCommand
@@ -110,6 +111,8 @@ class EmuAppConfigCommand(PebbleCommand):
                 raise ToolError("App config is only supported over phonesim connections.")
         except IOError as e:
             raise ToolError(str(e))
+        except TimeoutError:
+            raise ToolError("No JS found, unable to load configuration.")
 
         if args.file:
             config_url = "file://{}".format(os.path.realpath(os.path.expanduser(args.file)))
