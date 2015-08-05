@@ -47,9 +47,9 @@ class TranscriptionServer(PebbleCommand):
 
         # Separate the sentence into individual words. Punctuation marks are treated as words
         if args.transcription:
-            stripped = [w.strip() for w in re.split('(\W)', args.transcription) if w.strip() != '']
+            stripped = [w.strip() for w in re.split(r'(\W)', args.transcription) if w.strip() != '']
             # prefix punctuation marks with backspace character
-            self._words = [(z if re.match('\w', z) else '\b' + z) for z in stripped]
+            self._words = [(z if re.match(r'\w', z) else '\b' + z) for z in stripped]
         else:
             self._words = []
 
@@ -58,11 +58,11 @@ class TranscriptionServer(PebbleCommand):
 
         logger.debug("Transcription server listening")
 
-        while True:
-            try:
-                sleep(1)
-            except KeyboardInterrupt:
-                return
+        try:
+            while True:
+                    sleep(1)
+        except KeyboardInterrupt:
+            return
 
     @classmethod
     def add_parser(cls, parser):
