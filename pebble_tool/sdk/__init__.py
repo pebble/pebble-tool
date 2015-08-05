@@ -7,7 +7,7 @@ import subprocess
 from pebble_tool.exceptions import MissingSDK
 from pebble_tool.util import get_persist_dir
 
-pebble_platforms = ('aplite', 'basalt')
+pebble_platforms = ('aplite', 'basalt', 'chalk')
 
 SDK_VERSION = '3'
 

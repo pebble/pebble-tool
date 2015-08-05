@@ -169,7 +169,7 @@ int main(void) {
 DICT_DUMMY_APPINFO = {
     'company_name': 'MakeAwesomeHappen',
     'version_label': '1.0',
-    'target_platform': '["aplite", "basalt"]',
+    'target_platform': '["aplite", "basalt", "chalk"]',
     'sdk_version': SDK_VERSION,
     'is_watchface': 'false',
     'app_keys': """{
