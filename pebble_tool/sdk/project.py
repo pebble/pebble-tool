@@ -8,6 +8,7 @@ import uuid
 SDK_VERSION = "3"
 
 from pebble_tool.exceptions import InvalidProjectException, InvalidJSONException, OutdatedProjectException
+from . import pebble_platforms
 
 
 class PebbleProject(object):
@@ -52,7 +53,7 @@ class PebbleProject(object):
         self.company_name = self.appinfo['companyName']
         self.version = self.appinfo['versionLabel']
         self.sdk_version = self.appinfo['sdkVersion']
-        self.target_platforms = self.appinfo.get('targetPlatforms', ['aplite', 'basalt'])
+        self.target_platforms = self.appinfo.get('targetPlatforms', pebble_platforms)
         self.capabilities = self.appinfo.get('capabilities', [])
 
         watchapp = self.appinfo.get('watchapp', {})
