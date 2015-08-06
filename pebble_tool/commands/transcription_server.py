@@ -10,8 +10,7 @@ from libpebble2.services.voice import *
 
 from .base import PebbleCommand
 
-logger = logging.getLogger("pebble-tool.voice")
-logger.setLevel(logging.DEBUG)
+logger = logging.getLogger("pebble_tool.commands.transcription_server")
 
 
 class TranscriptionServer(PebbleCommand):
