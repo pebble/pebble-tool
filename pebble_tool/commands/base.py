@@ -16,7 +16,7 @@ from libpebble2.protocol.system import TimeMessage, SetUTC
 
 from pebble_tool.exceptions import ToolError
 from pebble_tool.sdk import pebble_platforms
-from pebble_tool.sdk.emulator import ManagedEmulatorTransport, get_emulator_info
+from pebble_tool.sdk.emulator import ManagedEmulatorTransport
 from pebble_tool.sdk.cloudpebble import CloudPebbleTransport
 from pebble_tool.util.analytics import post_event
 
