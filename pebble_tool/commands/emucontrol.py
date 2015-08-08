@@ -209,6 +209,21 @@ class EmuCompassCommand(PebbleCommand):
         return parser
 
 
+class EmuControlCommand(PebbleCommand):
+    """Control emulator interactively"""
+    command = 'emu-control'
+    valid_connections = {'emulator'}
+
+    def __call__(self, args):
+        super(EmuControlCommand, self).__call__(args)
+        browser = BrowserController()
+        browser.serve_sensor_page(self.pebble.transport.pypkjs_port)
+
+    @classmethod
+    def add_parser(cls, parser):
+        parser = super(EmuControlCommand, cls).add_parser(parser)
+        return parser
+
 class EmuTapCommand(PebbleCommand):
     """Emulates a tap."""
     command = 'emu-tap'
