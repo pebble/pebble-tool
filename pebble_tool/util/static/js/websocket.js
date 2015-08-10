@@ -78,14 +78,14 @@ var PebbleWebSocket = function(ip, port) {
     }
 
     this.emu_set_compass = function(heading, calibration) {
-        data = pack("Ib", [(65536 - heading * 182.044).toFixed(0)|0, calibration])
+        data = pack("Ib", [heading, calibration])
         self.send_qemu_message(QemuProtocol.Compass, data);
     };
 
     this.emu_set_accel = function(samples) {
         var message = [samples.length];
         _.each(samples, function(sample) {
-            message = message.concat(pack("hhh", _.map(sample, function(x) { return (x / 0.00981).toFixed(0)|0 })));
+            message = message.concat(pack("hhh", sample ));
         });
         self.send_qemu_message(QemuProtocol.Accel, message);
     };

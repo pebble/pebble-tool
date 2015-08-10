@@ -1,5 +1,6 @@
 import BaseHTTPServer
 import logging
+import os
 import pyqrcode
 import socket
 from socket import gethostname, gethostbyname
@@ -9,7 +10,6 @@ import urllib
 import webbrowser
 
 from phone_sensor import SENSOR_PAGE_HTML
-import os
 
 
 logger = logging.getLogger("pebble_tool.util.browser")
@@ -19,7 +19,7 @@ class BrowserController(object):
         self.port = None
 
     def open_config_page(self, url, callback):
-        self.port = port = self._find_port()
+        self.port = port = self._choose_port()
         url = self.url_append_params(url, {'return_to': 'http://localhost:{}/close?'.format(port)})
         webbrowser.open_new(url)
         self.serve_page(port, callback)
@@ -56,15 +56,8 @@ class BrowserController(object):
         query += encoded_params
         return urlparse.urlunparse((parsed.scheme, parsed.netloc, parsed.path, parsed.params, query, parsed.fragment))
 
-    def _find_port(self):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.bind(('localhost', 0))
-        addr, port = s.getsockname()
-        s.close()
-        return port
-
-    def serve_sensor_page(self, pypkjs_port):
-        self.port = port = self._find_port()
+    def serve_sensor_page(self, pypkjs_port, port=None):
+        self.port = port = self._choose_port(port)
         pypkjs_port = [pypkjs_port]
 
         class SensorPageHandler(BaseHTTPServer.BaseHTTPRequestHandler):
@@ -123,3 +116,10 @@ class BrowserController(object):
             print("Stopping...")
             server.server_close()
             time.sleep(2) # Wait for WS connection to die between phone/QEMU
+
+    def _choose_port(self, port=None):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.bind(('localhost', port|0))
+        addr, port = s.getsockname()
+        s.close()
+        return port

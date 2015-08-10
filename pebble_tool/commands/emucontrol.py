@@ -217,12 +217,14 @@ class EmuControlCommand(PebbleCommand):
     def __call__(self, args):
         super(EmuControlCommand, self).__call__(args)
         browser = BrowserController()
-        browser.serve_sensor_page(self.pebble.transport.pypkjs_port)
+        browser.serve_sensor_page(self.pebble.transport.pypkjs_port, args.port)
 
     @classmethod
     def add_parser(cls, parser):
         parser = super(EmuControlCommand, cls).add_parser(parser)
+        parser.add_argument('--port', type=int, help="Specific port to use for launching the sensor page")
         return parser
+
 
 class EmuTapCommand(PebbleCommand):
     """Emulates a tap."""
