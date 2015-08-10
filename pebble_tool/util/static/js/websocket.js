@@ -118,5 +118,9 @@ var PebbleWebSocket = function(ip, port) {
         mSocket = null;
     };
 
+    var handle_socket_message = function(e) {
+        self.trigger('message', e.data);
+    };
+
     init();
 };

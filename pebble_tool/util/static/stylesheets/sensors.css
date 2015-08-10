@@ -1,13 +1,13 @@
 input[type=range] {
   -webkit-appearance: none;
   margin: 18px 0;
-  width: 50%;
+  width: 80%;
 }
 input[type=range]:focus {
   outline: none;
 }
 input[type=range]::-webkit-slider-runnable-track {
-  width: 50%;
+  width: 80%;
   height: 8.4px;
   cursor: pointer;
   animate: 0.2s;
@@ -31,7 +31,7 @@ input[type=range]:focus::-webkit-slider-runnable-track {
   background: #367ebd;
 }
 input[type=range]::-moz-range-track {
-  width: 50%;
+  width: 80%;
   height: 8.4px;
   cursor: pointer;
   animate: 0.2s;
@@ -50,7 +50,7 @@ input[type=range]::-moz-range-thumb {
   cursor: pointer;
 }
 input[type=range]::-ms-track {
-  width: 50%;
+  width: 80%;
   height: 8.4px;
   cursor: pointer;
   animate: 0.2s;
@@ -85,4 +85,48 @@ input[type=range]:focus::-ms-fill-lower {
 }
 input[type=range]:focus::-ms-fill-upper {
   background: #367ebd;
+}
+body {
+  font-size: 4vh;
+  min-width: 360px;
+}
+h2 {
+  margin-bottom: 0px;
+  text-align: center;
+}
+.state {
+  color: #FF0000;
+  margin-top: -10px;
+  text-align: center;
+}
+.stuff {
+  text-align: center;
+}
+.compass {
+  width: 100%;
+  overflow: hidden;
+}
+img {
+  width: 400px;
+  height: 400px;
+  margin: 20px;
+}
+.compass-bg {
+  position: relative;
+  z-index: 0;
+}
+.needle {
+  position: absolute;
+  margin-left: -420px;
+  z-index: 2;
+}
+.accel {
+  width: 100%;
+  text-align: center;
+}
+.accel-text, .compass_text {
+  text-align: center;
+}
+.pebble-heading, .pebble-accel-x, .pebble-accel-y, .pebble-accel-z {
+  font-weight: bold;
 }

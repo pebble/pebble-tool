@@ -26,7 +26,8 @@ pebble.on('open', function() {
         $('.pebble-heading').text(convert_to_pebble_heading(heading));
     };
     var updateCompassOrientation = function(heading) {
-        $('.compass').rotate(Math.round(heading));
+        $('.compass-bg').rotate(Math.round(heading));
+        $('.needle').rotate(0);
     };
 
 
@@ -49,6 +50,7 @@ pebble.on('open', function() {
     window.ondevicemotion = _.throttle(function(e) {
         if(!$('.use_sensors').prop('checked')) { return; }
         var accel = _.clone(e.accelerationIncludingGravity);
+        if(accel.x == null) { return; }
         if(isReversed) {
             accel.x = -accel.x;
             accel.y = -accel.y;
@@ -60,15 +62,22 @@ pebble.on('open', function() {
     }, 10);
     window.ondeviceorientation = _.throttle(function(e) {
         if(!$('.use_sensors').prop('checked')) { return; }
-        var heading = e.webkitCompassHeading !== undefined ? e.webkitCompassHeading : e.alpha;
+        if(e.webkitCompassHeading !== undefined) {
+            var heading = e.webkitCompassHeading;
+        } else if(e.alpha !== null) {
+            var heading = window.innerWidth < window.innerHeight ? e.alpha : e.alpha + 90;
+        } else {
+            return;
+        }
         updateHeadingText(heading);
+        updateCompassOrientation(heading);
         if(pebble != null) {
             pebble.emu_set_compass(convert_to_pebble_heading(heading), Compass.Calibrated);
         }
     }, 500);
 
     $('input[type=range]').on("input", function() {
-        if($('.use_sensors').prop('checked')) { return; }
+        $('.use_sensors').prop('checked', false);
         var accel = {
             x: parseInt($('.accel-x-slider').val(), 10)*0.00981,
             y: parseInt($('.accel-y-slider').val(), 10)*0.00981,

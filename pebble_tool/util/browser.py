@@ -64,11 +64,14 @@ class BrowserController(object):
             PERMITTED_PATHS = ['static/js/backbone-min.js',
                                'static/js/backbone-min.map',
                                'static/js/jquery-2.1.4.min.js',
+                               'static/js/jQueryRotate.js',
                                'static/js/sensors.js',
                                'static/js/textdecoder.js',
                                'static/js/underscore-min.js',
                                'static/js/underscore-min.map',
                                'static/js/websocket.js',
+                               'static/compass-rose.png',
+                               'static/compass-needle.png',
                                'static/stylesheets/sensors.css']
 
             def do_HEAD(self):
