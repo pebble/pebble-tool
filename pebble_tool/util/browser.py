@@ -57,8 +57,7 @@ class BrowserController(object):
         return urlparse.urlunparse((parsed.scheme, parsed.netloc, parsed.path, parsed.params, query, parsed.fragment))
 
     def serve_sensor_page(self, pypkjs_port, port=None):
-        self.port = port = self._choose_port(port)
-        pypkjs_port = [pypkjs_port]
+        self.port = port or self._choose_port()
 
         class SensorPageHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             PERMITTED_PATHS = ['static/js/backbone-min.js',
@@ -87,7 +86,7 @@ class BrowserController(object):
                     self.send_header('Content-type', 'text/html')
                     self.end_headers()
                     self.wfile.write(SENSOR_PAGE_HTML.format(websocket_host="'{}'".format(gethostbyname(gethostname())),
-                                                             websocket_port="'{}'".format(pypkjs_port[0])))
+                                                             websocket_port="'{}'".format(pypkjs_port)))
                 elif file_path in self.PERMITTED_PATHS:
                     try:
                         file_contents = open(os.path.join(os.path.dirname(os.path.realpath(__file__)), file_path))
@@ -107,7 +106,7 @@ class BrowserController(object):
                 logger.debug("{} - - [{}] '{}' {} {}".format(self.client_address[0], self.log_date_time_string(),
                                                                self.requestline, code, size))
 
-        server = BaseHTTPServer.HTTPServer(('', port), SensorPageHandler)
+        server = BaseHTTPServer.HTTPServer(('', self.port), SensorPageHandler)
         url = "{}:{}".format(gethostbyname(gethostname()), server.server_port)
         url_code = pyqrcode.create(url)
         print(url_code.terminal(quiet_zone=1))
@@ -122,9 +121,9 @@ class BrowserController(object):
             server.server_close()
             time.sleep(2) # Wait for WS connection to die between phone/QEMU
 
-    def _choose_port(self, port=None):
+    def _choose_port(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.bind(('localhost', port or 0))
+        s.bind(('localhost', 0))
         addr, port = s.getsockname()
         s.close()
         return port
