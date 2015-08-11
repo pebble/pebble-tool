@@ -4,11 +4,10 @@ var Compass = {
     Calibrated: 2
 };
 
-
 var pebble = new PebbleWebSocket(host, port);
-var interval_id;
 pebble.on('open', function() {
     var samples = [];
+    var use_sensors;
 
     var updateAccelText = _.throttle(function(accel) {
         var pebble_accel = convert_to_pebble_accel(accel);
@@ -18,6 +17,9 @@ pebble.on('open', function() {
         $('.pebble-accel-x').text(pebble_accel[0]);
         $('.pebble-accel-y').text(pebble_accel[1]);
         $('.pebble-accel-z').text(pebble_accel[2]);
+        $('.accel-x-slider').val(pebble_accel[0]);
+        $('.accel-y-slider').val(pebble_accel[1]);
+        $('.accel-z-slider').val(pebble_accel[2]);
     }, 100);
     var updateHeadingText = function(heading) {
         $('.heading').text(Math.round(heading));
@@ -40,11 +42,12 @@ pebble.on('open', function() {
             pebble.emu_set_accel(samples);
         }
         samples = [];
-    }, 200);
+    }, 300);
 
 
     var isReversed = /Android/i.test(navigator.userAgent);
     window.ondevicemotion = _.throttle(function(e) {
+        if(!$('.use_sensors').prop('checked')) { return; }
         var accel = _.clone(e.accelerationIncludingGravity);
         if(isReversed) {
             accel.x = -accel.x;
@@ -56,6 +59,7 @@ pebble.on('open', function() {
         send_queued_samples();
     }, 10);
     window.ondeviceorientation = _.throttle(function(e) {
+        if(!$('.use_sensors').prop('checked')) { return; }
         var heading = e.webkitCompassHeading !== undefined ? e.webkitCompassHeading : e.alpha;
         updateHeadingText(heading);
         if(pebble != null) {
@@ -63,6 +67,17 @@ pebble.on('open', function() {
         }
     }, 500);
 
+    $('input[type=range]').on("input", function() {
+        if($('.use_sensors').prop('checked')) { return; }
+        var accel = {
+            x: parseInt($('.accel-x-slider').val(), 10)*0.00981,
+            y: parseInt($('.accel-y-slider').val(), 10)*0.00981,
+            z: parseInt($('.accel-z-slider').val(), 10)*0.00981
+        };
+        samples.push(convert_to_pebble_accel(accel));
+        updateAccelText(accel);
+        send_queued_samples();
+    });
 
     if(window.DeviceMotionEvent && window.DeviceOrientationEvent) {
         $('.state').text("(Transmitting)");

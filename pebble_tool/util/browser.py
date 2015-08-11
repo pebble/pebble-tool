@@ -68,7 +68,8 @@ class BrowserController(object):
                                'static/js/textdecoder.js',
                                'static/js/underscore-min.js',
                                'static/js/underscore-min.map',
-                               'static/js/websocket.js']
+                               'static/js/websocket.js',
+                               'static/stylesheets/sensors.css']
 
             def do_HEAD(self):
                 self.send_response(200)
@@ -119,7 +120,7 @@ class BrowserController(object):
 
     def _choose_port(self, port=None):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.bind(('localhost', port|0))
+        s.bind(('localhost', port or 0))
         addr, port = s.getsockname()
         s.close()
         return port
