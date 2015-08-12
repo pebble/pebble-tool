@@ -63,9 +63,9 @@ class PebbleLogPrinter(object):
     def _print(self, packet, message):
         colour = self._get_colour(packet)
         if colour:
-            print(colour + message + Style.RESET_ALL)
+            print(colour + message.encode('utf-8') + Style.RESET_ALL)
         else:
-            print(message)
+            print(message.encode('utf-8'))
 
     def _get_colour(self, packet):
         colour = None
@@ -97,14 +97,14 @@ class PebbleLogPrinter(object):
 
         # We do actually know the original timestamp of the log (it's in packet.timestamp), but if we
         # use it that it meshes oddly with the JS logs, which must use the user's system time.
-        self._print(packet, "[{}] {}:{}> {}".format(datetime.now().strftime("%H:%M:%S"), packet.filename,
+        self._print(packet, u"[{}] {}:{}> {}".format(datetime.now().strftime("%H:%M:%S"), packet.filename,
                                                     packet.line_number, packet.message))
         self._maybe_handle_crash(packet)
 
     def handle_phone_log(self, packet):
         assert isinstance(packet, WebSocketPhoneAppLog)
-        self._print(packet, "[{}] javascript> {}".format(datetime.now().strftime("%H:%M:%S"),
-                                                         packet.payload.decode('utf-8')))
+        self._print(packet, u"[{}] javascript> {}".format(datetime.now().strftime("%H:%M:%S"),
+                                                         packet.payload))
 
     def handle_connection(self, packet):
         assert isinstance(packet, WebSocketConnectionStatusUpdate)
