@@ -2,6 +2,8 @@ SENSOR_PAGE_HTML = """
 <html>
     <head>
         <title>Pebble Emulator Control</title>
+        <meta name="viewport" content="width=device-width,initial-scale=1,max-scale=1">
+        <link rel="stylesheet" type="text/css" href="static/stylesheets/normalize.min.css">
         <link rel="stylesheet" type="text/css" href="static/stylesheets/sensors.css">
         <script src="static/js/textdecoder.js" type="text/javascript"></script>
         <script src="static/js/jquery-2.1.4.min.js" type="text/javascript"></script>
@@ -13,10 +15,14 @@ SENSOR_PAGE_HTML = """
         <script src="static/js/sensors.js" type="text/javascript"></script>
     </head>
     <body>
-        <h2>Emulator Control</h2>
-        <div class="state">(Connecting)</div>
+        <div class="state">Connecting</div>
+        <h1>Pebble Emulator Control</h1>
         <div class="stuff" style="display: none;">
-            <div>
+            <label for="use_sensors">
+              <span>Use built-in sensors?</span>
+              <input type="checkbox" class="use_sensors" checked id="use_sensors">
+            </label>
+            <div class="compass-container">
                 <div class="compass-text"><span class="pebble-heading">NaN</span> (<span class="heading">NaN</span>&deg;)</div>
                 <div class="compass">
                     <img src="static/compass-rose.png" class="compass-bg">
@@ -31,7 +37,6 @@ SENSOR_PAGE_HTML = """
                 <div class="accel-text"><span class="pebble-accel-z">0</span> (<span class="accel-z">0</span>  m/s<sup>2</sup>)</div>
                 -z <input class="accel-z-slider" type="range" min="-4000" max="4000" step="1" value="0" /> +z
             </div>
-            <input type="checkbox" class="use_sensors" checked> Use built-in sensors
         </div>
     </body>
 </html>

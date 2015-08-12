@@ -72,6 +72,7 @@ class BrowserController(object):
                                'static/js/websocket.js',
                                'static/compass-rose.png',
                                'static/compass-needle.png',
+                               'static/stylesheets/normalize.min.css',
                                'static/stylesheets/sensors.css']
 
             def do_HEAD(self):

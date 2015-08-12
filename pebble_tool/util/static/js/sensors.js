@@ -89,7 +89,7 @@ pebble.on('open', function() {
     });
 
     if(window.DeviceMotionEvent && window.DeviceOrientationEvent) {
-        $('.state').text("(Transmitting)");
+        $('.state').text("Transmitting");
         $('.stuff').show();
     } else {
         $('.state').text("Not Supported");

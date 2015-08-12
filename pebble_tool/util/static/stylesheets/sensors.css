@@ -1,3 +1,12 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Trebuchet MS', sans-serif;
+  padding-top: 2.5rem;
+  text-align: center;
+}
 input[type=range] {
   -webkit-appearance: none;
   margin: 18px 0;
@@ -86,30 +95,38 @@ input[type=range]:focus::-ms-fill-lower {
 input[type=range]:focus::-ms-fill-upper {
   background: #367ebd;
 }
-body {
-  font-size: 4vh;
-  min-width: 360px;
-}
-h2 {
-  margin-bottom: 0px;
-  text-align: center;
+h1 {
+  font-size: 1.4rem;
+  margin: 0;
 }
 .state {
-  color: #FF0000;
-  margin-top: -10px;
-  text-align: center;
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  padding: 0.5em;
+  background-color: #aa0000;
+  color: #fff;
+  text-transform: uppercase;
 }
 .stuff {
-  text-align: center;
+}
+.compass-container {
+  padding: 1rem;
 }
 .compass {
-  width: 100%;
+  width: 50%;
   overflow: hidden;
+  float: left;
+  position: relative;
 }
-img {
-  width: 400px;
-  height: 400px;
-  margin: 20px;
+.compass-text {
+  width: 50%;
+  float: right;
+  padding-top: 20%;
+}
+.compass img {
+  width: 100%;
 }
 .compass-bg {
   position: relative;
@@ -117,16 +134,19 @@ img {
 }
 .needle {
   position: absolute;
-  margin-left: -420px;
   z-index: 2;
+  top: 0;
+  left: 0;
 }
 .accel {
   width: 100%;
   text-align: center;
-}
-.accel-text, .compass_text {
-  text-align: center;
+  clear: both;
+  padding-top: 1rem;
 }
 .pebble-heading, .pebble-accel-x, .pebble-accel-y, .pebble-accel-z {
   font-weight: bold;
+}
+label {
+  margin-bottom: 0.5rem;
 }
