@@ -108,6 +108,7 @@ h1 {
   background-color: #aa0000;
   color: #fff;
   text-transform: uppercase;
+  z-index: 100;
 }
 .stuff {
 }
