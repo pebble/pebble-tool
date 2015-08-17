@@ -99,7 +99,7 @@ h1 {
   font-size: 1.4rem;
   margin: 0;
 }
-.state {
+#state {
   position: fixed;
   left: 0;
   right: 0;
@@ -110,42 +110,37 @@ h1 {
   text-transform: uppercase;
   z-index: 100;
 }
-.stuff {
+#stuff {
 }
-.compass-container {
+#compass-container {
   padding: 1rem;
 }
-.compass {
+#compass {
   width: 50%;
   overflow: hidden;
   float: left;
   position: relative;
 }
-.compass-text {
+#compass-text {
   width: 50%;
   float: right;
   padding-top: 20%;
 }
-.compass img {
+#compass-bg {
   width: 100%;
+  margin: 0 auto;
 }
-.compass-bg {
-  position: relative;
-  z-index: 0;
+#arrow {
+  width: 14px;
+  margin: 0 auto;
 }
-.needle {
-  position: absolute;
-  z-index: 2;
-  top: 0;
-  left: 0;
-}
-.accel {
+#accel {
   width: 100%;
   text-align: center;
   clear: both;
   padding-top: 1rem;
 }
-.pebble-heading, .pebble-accel-x, .pebble-accel-y, .pebble-accel-z {
+#pebble-heading, #pebble-accel-x, #pebble-accel-y, #pebble-accel-z {
   font-weight: bold;
 }
 label {

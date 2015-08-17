@@ -6,7 +6,6 @@ var QemuProtocol = {
 var pack = function(format, data) {
     var pointer = 0;
     var bytes = [];
-    var encoder = new TextEncoder('utf-8');
     for(var i = 0; i < format.length; ++i) {
         if(pointer >= data.length) {
             throw new Error("Expected more data.");
@@ -33,10 +32,8 @@ var pack = function(format, data) {
             bytes.push(data[pointer] & 0xFF);
             ++pointer;
             break;
-        case "S":
-            bytes = bytes.concat(Array.prototype.slice.call(encoder.encode(data[pointer])));
-            ++pointer;
-            break;
+        default:
+            console.log("Not implemented");
         }
     }
     return bytes;
@@ -48,6 +45,7 @@ var PebbleWebSocket = function(ip, port) {
     var mIP = ip;
     var mPort = port;
     var mSocket = null;
+    var interval_id = null;
 
     _.extend(this, Backbone.Events)
 

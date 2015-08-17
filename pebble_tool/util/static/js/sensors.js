@@ -11,23 +11,22 @@ pebble.on('open', function() {
 
     var updateAccelText = _.throttle(function(accel) {
         var pebble_accel = convert_to_pebble_accel(accel);
-        $('.accel-x').text(accel.x.toFixed(2));
-        $('.accel-y').text(accel.y.toFixed(2));
-        $('.accel-z').text(accel.z.toFixed(2));
-        $('.pebble-accel-x').text(pebble_accel[0]);
-        $('.pebble-accel-y').text(pebble_accel[1]);
-        $('.pebble-accel-z').text(pebble_accel[2]);
-        $('.accel-x-slider').val(pebble_accel[0]);
-        $('.accel-y-slider').val(pebble_accel[1]);
-        $('.accel-z-slider').val(pebble_accel[2]);
+        document.getElementById('accel-x').innerHTML = accel.x.toFixed(2);
+        document.getElementById('accel-y').innerHTML = accel.y.toFixed(2);
+        document.getElementById('accel-z').innerHTML = accel.z.toFixed(2);
+        document.getElementById('pebble-accel-x').innerHTML = pebble_accel[0];
+        document.getElementById('pebble-accel-y').innerHTML = pebble_accel[1];
+        document.getElementById('pebble-accel-z').innerHTML = pebble_accel[2];
+        document.getElementById('accel-x-slider').value = pebble_accel[0];
+        document.getElementById('accel-y-slider').value = pebble_accel[1];
+        document.getElementById('accel-z-slider').value = pebble_accel[2];
     }, 100);
     var updateHeadingText = function(heading) {
-        $('.heading').text(Math.round(heading));
-        $('.pebble-heading').text(convert_to_pebble_heading(heading));
+        document.getElementById('heading').innerHTML = Math.round(heading);
+        document.getElementById('pebble-heading').innerHTML = convert_to_pebble_heading(heading);
     };
     var updateCompassOrientation = function(heading) {
-        $('.compass-bg').rotate(Math.round(heading));
-        $('.needle').rotate(0);
+        propeller.angle = 360 - Math.round(heading);
     };
 
 
@@ -48,7 +47,7 @@ pebble.on('open', function() {
 
     var isReversed = /Android/i.test(navigator.userAgent);
     window.ondevicemotion = _.throttle(function(e) {
-        if(!$('.use_sensors').prop('checked')) { return; }
+        if(!document.getElementById('use_sensors').checked) { return; }
         var accel = _.clone(e.accelerationIncludingGravity);
         if(accel.x == null) { return; }
         if(isReversed) {
@@ -61,10 +60,11 @@ pebble.on('open', function() {
         send_queued_samples();
     }, 10);
     window.ondeviceorientation = _.throttle(function(e) {
-        if(!$('.use_sensors').prop('checked')) { return; }
+        if(!document.getElementById('use_sensors').checked) { return; }
         if(e.webkitCompassHeading !== undefined) {
             var heading = e.webkitCompassHeading;
         } else if(e.alpha !== null) {
+        // Should handle when phone is flipped the other direction
             var heading = window.innerWidth < window.innerHeight ? e.alpha : e.alpha + 90;
         } else {
             return;
@@ -76,30 +76,49 @@ pebble.on('open', function() {
         }
     }, 500);
 
-    $('input[type=range]').on("input", function() {
-        $('.use_sensors').prop('checked', false);
+
+    var normalize = function(angle) {
+        angle = angle % 360;
+        return angle < 0 ? -angle : 360 - angle;
+    }
+    var propeller = new Propeller('#compass-bg', {inertia: 0, step: 1, speed: 0, onDragStop: function() {
+        document.getElementById('use_sensors').checked = false;
+        var heading = normalize(this.angle);
+        updateHeadingText(heading);
+        if(pebble != null) {
+            pebble.emu_set_compass(convert_to_pebble_heading(heading), Compass.Calibrated);
+        }
+    }});
+    var updateAccelFromManualInput = function() {
+        document.getElementById('use_sensors').checked = false;
         var accel = {
-            x: parseInt($('.accel-x-slider').val(), 10)*0.00981,
-            y: parseInt($('.accel-y-slider').val(), 10)*0.00981,
-            z: parseInt($('.accel-z-slider').val(), 10)*0.00981
+            x: parseInt(document.getElementById('accel-x-slider').value, 10)*0.00981,
+            y: parseInt(document.getElementById('accel-y-slider').value, 10)*0.00981,
+            z: parseInt(document.getElementById('accel-z-slider').value, 10)*0.00981,
         };
         samples.push(convert_to_pebble_accel(accel));
         updateAccelText(accel);
         send_queued_samples();
+    };
+    document.getElementById('accel-x-slider').addEventListener("input", updateAccelFromManualInput);
+    document.getElementById('accel-y-slider').addEventListener("input", updateAccelFromManualInput);
+    document.getElementById('accel-z-slider').addEventListener("input", updateAccelFromManualInput);
+
+    document.getElementById('use_sensors').addEventListener("change", function() {
     });
 
     if(window.DeviceMotionEvent && window.DeviceOrientationEvent) {
-        $('.state').text("Transmitting");
-        $('.stuff').show();
+        document.getElementById('state').innerHTML = "Transmitting";
+        document.getElementById('stuff').style.display = "block";
     } else {
-        $('.state').text("Not Supported");
+        document.getElementById('state').innerHTML = "Not Supported";
     }
 });
 
 pebble.on('close', function() {
     window.ondevicemotion = null;
     window.ondeviceorientation = null;
-    $('.state').text("Disconnected");
-    $('.stuff').hide();
+    document.getElementById('state').innerHTML = "Disconnected";
+    document.getElementById('stuff').style.display = "none";
     pebble = null;
 });
