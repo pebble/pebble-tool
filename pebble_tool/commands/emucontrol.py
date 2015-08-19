@@ -8,6 +8,7 @@ from libpebble2.communication.transports.websocket.protocol import WebSocketPhon
 from libpebble2.communication.transports.websocket.protocol import WebSocketPhonesimConfigResponse, WebSocketRelayQemu
 from libpebble2.communication.transports.qemu.protocol import *
 from libpebble2.communication.transports.qemu import MessageTargetQemu, QemuTransport
+import math
 import os
 
 from .base import PebbleCommand
@@ -189,9 +190,8 @@ class EmuCompassCommand(PebbleCommand):
 
         try:
             max_angle_radians = 0x10000
-            max_angle_degrees = 360
-            offset = 180
-            heading = (args.heading * max_angle_radians + offset) / max_angle_degrees
+            max_angle_degrees = 360.0
+            heading = math.ceil(args.heading % 360 * max_angle_radians / max_angle_degrees)
         except TypeError:
             heading = None
 

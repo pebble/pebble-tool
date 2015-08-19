@@ -35,7 +35,7 @@ pebble.on('open', function() {
         return _.map(accel, function(v, k) { return (v / 0.00981).toFixed(0)|0});
     };
     var convert_to_pebble_heading = function(heading) {
-        return (65536 - heading * 182.044).toFixed(0)|0;
+        return (Math.ceil(heading * 65536 / 360)).toFixed(0)|0;
     };
 
     var send_queued_samples = _.throttle(function() {
