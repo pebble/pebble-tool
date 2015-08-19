@@ -18,8 +18,8 @@ SENSOR_PAGE_HTML = """
         <h1>Pebble Emulator Control</h1>
         <div id="stuff" style="display: none;">
             <label for="use_sensors">
-              <span>Use built-in sensors?</span>
-              <input type="checkbox" class="use_sensors" checked id="use_sensors">
+                <span>Use built-in sensors?</span>
+                <input type="checkbox" class="use_sensors" checked id="use_sensors">
             </label>
             <div id="compass-container">
                 <div id="compass-text"><span id="pebble-heading">NaN</span> (<span id="heading">NaN</span>&deg;)</div>
