@@ -1,4 +1,4 @@
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, division, print_function
 __author__ = 'cherie'
 
 import argparse
@@ -190,7 +190,7 @@ class EmuCompassCommand(PebbleCommand):
 
         try:
             max_angle_radians = 0x10000
-            max_angle_degrees = 360.0
+            max_angle_degrees = 360
             heading = math.ceil(args.heading % 360 * max_angle_radians / max_angle_degrees)
         except TypeError:
             heading = None

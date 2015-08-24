@@ -60,7 +60,7 @@ class BrowserController(object):
         self.port = port or self._choose_port()
 
         class SensorPageHandler(BaseHTTPServer.BaseHTTPRequestHandler):
-            PERMITTED_PATHS = ['static/js/backbone-min.js',
+            PERMITTED_PATHS = {'static/js/backbone-min.js',
                                'static/js/backbone-min.map',
                                'static/js/propeller.min.js',
                                'static/js/sensors.js',
@@ -70,7 +70,7 @@ class BrowserController(object):
                                'static/compass-arrow.png',
                                'static/compass-rose.png',
                                'static/stylesheets/normalize.min.css',
-                               'static/stylesheets/sensors.css']
+                               'static/stylesheets/sensors.css'}
 
             def do_HEAD(self):
                 self.send_response(200)
