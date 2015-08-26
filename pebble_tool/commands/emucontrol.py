@@ -1,4 +1,4 @@
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, division, print_function
 __author__ = 'cherie'
 
 import argparse
@@ -8,6 +8,7 @@ from libpebble2.communication.transports.websocket.protocol import WebSocketPhon
 from libpebble2.communication.transports.websocket.protocol import WebSocketPhonesimConfigResponse, WebSocketRelayQemu
 from libpebble2.communication.transports.qemu.protocol import *
 from libpebble2.communication.transports.qemu import MessageTargetQemu, QemuTransport
+import math
 import os
 
 from .base import PebbleCommand
@@ -190,8 +191,7 @@ class EmuCompassCommand(PebbleCommand):
         try:
             max_angle_radians = 0x10000
             max_angle_degrees = 360
-            offset = 180
-            heading = (args.heading * max_angle_radians + offset) / max_angle_degrees
+            heading = math.ceil(args.heading % 360 * max_angle_radians / max_angle_degrees)
         except TypeError:
             heading = None
 
@@ -206,6 +206,23 @@ class EmuCompassCommand(PebbleCommand):
         calib_options.add_argument('--uncalibrated', action='store_true', help="Set compass to uncalibrated")
         calib_options.add_argument('--calibrating', action='store_true', help="Set compass to calibrating mode")
         calib_options.add_argument('--calibrated', action='store_true', help="Set compass to calibrated")
+        return parser
+
+
+class EmuControlCommand(PebbleCommand):
+    """Control emulator interactively"""
+    command = 'emu-control'
+    valid_connections = {'emulator'}
+
+    def __call__(self, args):
+        super(EmuControlCommand, self).__call__(args)
+        browser = BrowserController()
+        browser.serve_sensor_page(self.pebble.transport.pypkjs_port, args.port)
+
+    @classmethod
+    def add_parser(cls, parser):
+        parser = super(EmuControlCommand, cls).add_parser(parser)
+        parser.add_argument('--port', type=int, help="Specific port to use for launching the sensor page")
         return parser
 
 
