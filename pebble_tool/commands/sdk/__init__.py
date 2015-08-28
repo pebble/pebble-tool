@@ -29,14 +29,14 @@ class SDKCommand(BaseCommand):
     def _fix_python(self):
         # First figure out what 'python' means:
         try:
-            version = int(subprocess.check_output(["python", "-c", "import sys; print sys.version_info[0]"]).strip())
+            version = int(subprocess.check_output(["python", "-c", "import sys; print(sys.version_info[0])"]).strip())
         except (subprocess.CalledProcessError, ValueError):
             raise ToolError("'python' doesn't mean anything on this system.")
 
         if version != 2:
             try:
                 python2_version = int(subprocess.check_output(["python2", "-c",
-                                                                "import sys; print sys.version_info[1]"]).strip())
+                                                                "import sys; print(sys.version_info[1])"]).strip())
             except (subprocess.CalledProcessError, ValueError):
                 raise ToolError("Can't find a python2 interpreter.")
             if python2_version < 6:
@@ -64,4 +64,5 @@ class SDKCommand(BaseCommand):
             if type(e) in event_map:
                 post_event(event_map[type(e)])
             raise
+        self._fix_python()
         self.add_arm_tools_to_path()
