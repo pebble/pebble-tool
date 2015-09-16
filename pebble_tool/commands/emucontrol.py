@@ -262,13 +262,18 @@ class EmuTimeFormatCommand(PebbleCommand):
 
     def __call__(self, args):
         super(EmuTimeFormatCommand, self).__call__(args)
-        is24Hour = args.format == "24h"
-        time_format_input = QemuTimeFormat(is24Hour=is24Hour)
+        if args.format == "24h":
+            is_24_hour = True
+        elif args.format == "12h":
+            is_24_hour = False
+        else:
+            raise ToolError("Invalid time format.")
+        time_format_input = QemuTimeFormat(is_24_hour=is_24_hour)
         send_data_to_qemu(self.pebble.transport, time_format_input)
 
     @classmethod
     def add_parser(cls, parser):
         parser = super(EmuTimeFormatCommand, cls).add_parser(parser)
-        parser.add_argument('--format', choices=['12h', '24h'], default='24h',
+        parser.add_argument('--format', choices=['12h', '24h'],
                             help="Set the time format of the emulator")
         return parser
