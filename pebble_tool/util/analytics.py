@@ -179,10 +179,7 @@ class PebbleAnalytics(threading.Thread):
 
     @classmethod
     def get_option_dir(cls):
-        try:
-            return os.path.normpath(os.path.join(sdk_path(), '..'))
-        except MissingSDK:
-            return get_persist_dir()
+        return get_persist_dir()
 
     _shared_analytics = None
     @classmethod

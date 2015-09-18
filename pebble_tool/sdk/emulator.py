@@ -3,6 +3,7 @@ __author__ = 'katharine'
 
 from six.moves import range
 
+import bz2
 import errno
 import json
 import logging
@@ -203,7 +204,15 @@ class ManagedEmulatorTransport(WebsocketTransport):
             except OSError as e:
                 if e.errno != errno.EEXIST:
                     raise
-            shutil.copy(sdk_qemu_spi_flash, path)
+
+            # Copy the compressed file.
+            with bz2.BZ2File(sdk_qemu_spi_flash) as from_file:
+                with open(path, 'w') as to_file:
+                    while True:
+                        data = from_file.read(512)
+                        if not data:
+                            break
+                        to_file.write(data)
 
     def _get_spi_path(self, platform=None):
         if platform is None:

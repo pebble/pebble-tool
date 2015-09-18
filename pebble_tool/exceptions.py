@@ -31,3 +31,6 @@ class InvalidJSONException(PebbleProjectException):
 
 class OutdatedProjectException(PebbleProjectException):
     pass
+
+class SDKInstallError(ToolError):
+    pass
