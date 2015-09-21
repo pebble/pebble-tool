@@ -35,6 +35,7 @@ class TranscriptionServer(PebbleCommand):
     def _handle_audio_stop(self):
         if self._timer is not None:
             self._timer.cancel()
+        self._voice_service.send_dictation_result(result=self._result, sentences=[self._words], app_uuid=self._app_uuid)
 
     def __call__(self, args):
         super(TranscriptionServer, self).__call__(args)
