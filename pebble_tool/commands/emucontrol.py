@@ -253,3 +253,27 @@ class EmuTapCommand(PebbleCommand):
         parser.add_argument('--direction', choices=['x+', 'x-', 'y+', 'y-', 'z+', 'z-'], default='x+',
                             help="Set the direction of the accel tap in the emulator")
         return parser
+
+
+class EmuTimeFormatCommand(PebbleCommand):
+    """Sets the emulated time format (12h or 24h)."""
+    command = 'emu-time-format'
+    valid_connections = {'qemu', 'emulator'}
+
+    def __call__(self, args):
+        super(EmuTimeFormatCommand, self).__call__(args)
+        if args.format == "24h":
+            is_24_hour = True
+        elif args.format == "12h":
+            is_24_hour = False
+        else:
+            raise ToolError("Invalid time format.")
+        time_format_input = QemuTimeFormat(is_24_hour=is_24_hour)
+        send_data_to_qemu(self.pebble.transport, time_format_input)
+
+    @classmethod
+    def add_parser(cls, parser):
+        parser = super(EmuTimeFormatCommand, cls).add_parser(parser)
+        parser.add_argument('--format', choices=['12h', '24h'],
+                            help="Set the time format of the emulator")
+        return parser
