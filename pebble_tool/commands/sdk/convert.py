@@ -9,6 +9,7 @@ from ..base import BaseCommand
 
 from pebble_tool.sdk.templates import FILE_WSCRIPT, FILE_WSCRIPT_LEGACY2
 from pebble_tool.sdk.project import PebbleProject, OutdatedProjectException
+from pebble_tool.sdk import pebble_platforms
 
 
 class PblProjectConverter(BaseCommand):
@@ -54,7 +55,7 @@ class PblProjectConverter(BaseCommand):
         with open(app_info_path, "r") as f:
             app_info_json = json.load(f, object_pairs_hook=collections.OrderedDict)
 
-        app_info_json["targetPlatforms"] = ["aplite", "basalt"]
+        app_info_json["targetPlatforms"] = pebble_platforms
         app_info_json["sdkVersion"] = "3"
 
         with open(app_info_path, "w") as f:

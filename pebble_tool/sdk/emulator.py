@@ -140,6 +140,11 @@ class ManagedEmulatorTransport(WebsocketTransport):
         ]
 
         platform_args = {
+            'chalk': [
+                '-machine', 'pebble-s4-bb',
+                '-cpu', 'cortex-m4',
+                '-pflash', qemu_spi_flash,
+            ],
             'basalt': [
                 '-machine', 'pebble-snowy-bb',
                 '-cpu', 'cortex-m4',

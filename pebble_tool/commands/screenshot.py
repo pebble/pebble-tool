@@ -43,10 +43,11 @@ class ScreenshotCommand(PebbleCommand):
                 raise ToolError(str(e) + " (try rebooting the watch)")
         if not args.no_correction:
             image = self._correct_colours(image)
+        image = self._roundify(image)
         self.progress_bar.finish()
 
         filename = self._generate_filename() if args.filename is None else args.filename
-        png.from_array(image, mode='RGB;8').save(filename)
+        png.from_array(image, mode='RGBA;8').save(filename)
         print("Saved screenshot to {}".format(filename))
         if not args.no_open:
             self._open(os.path.abspath(filename))
@@ -125,6 +126,25 @@ class ScreenshotCommand(PebbleCommand):
             (255, 255, 255): (255, 255, 255),
         }
         return [list(itertools.chain(*[mapping[y[x], y[x+1], y[x+2]] for x in range(0, len(y), 3)])) for y in image]
+
+    def _roundify(self, image):
+        # Convert our RGB image to fully-opaque RGBA.
+        rgba = [list(itertools.chain(*[(y[x], y[x+1], y[x+2], 255) for x in range(0, len(y), 3)])) for y in image]
+        should_roundify = (self.pebble.watch_platform == 'chalk')
+        # These numbers pilfered from display_spalding.c. This is just the top-left corner; it's rotationally
+        # symmetric.
+        roundness = [76, 71, 66, 63, 60, 57, 55, 52, 50, 48, 46, 45, 43, 41, 40, 38, 37,
+                     36, 34, 33, 32, 31, 29, 28, 27, 26, 25, 24, 23, 22, 22, 21, 20, 19,
+                     18, 18, 17, 16, 15, 15, 14, 13, 13, 12, 12, 11, 10, 10, 9, 9, 8, 8, 7,
+                     7, 7, 6, 6, 5, 5, 5, 4, 4, 4, 3, 3, 3, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1,
+                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        roundness.extend(reversed(roundness))
+        if should_roundify:
+            for row, skip in zip(rgba, roundness):
+                for x in xrange(3, len(row), 4):
+                    if not skip <= x // 4 < len(row) // 4 - skip:
+                        row[x] = 0
+        return rgba
 
     @classmethod
     def _generate_filename(cls):
