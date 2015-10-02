@@ -98,6 +98,6 @@ class DataLoggingCommand(PebbleCommand):
                             "'enable-sends': enable automatic sends of session data to phone, "
                             "'disable-sends': disable automatic sends of session data to phone")
         parser.add_argument('filename', nargs='?', type=str, help="Filename of download")
-        parser.add_argument('--session_id', type=int, default=-1,
+        parser.add_argument('--session-id', type=int, default=-1,
                             help="Which session to download, if the download command is specified")
         return parser
