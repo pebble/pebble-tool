@@ -71,7 +71,7 @@ class DataLoggingCommand(PebbleCommand):
                 assert not data_logging_service.get_send_enable()
 
 
-        elif args.command == 'get-sends-enable':
+        elif args.command == 'get-sends-enabled':
             enabled = data_logging_service.get_send_enable()
             status = "ENABLED" if enabled else "DISABLED"
             print("Sending of sessions from watch to phone is {}".format(status))
@@ -90,10 +90,10 @@ class DataLoggingCommand(PebbleCommand):
     def add_parser(cls, parser):
         parser = super(DataLoggingCommand, cls).add_parser(parser)
         parser.add_argument('command',
-                            choices=['list', 'download', 'get-sends-enable', 'enable-sends',
+                            choices=['list', 'download', 'get-sends-enabled', 'enable-sends',
                             'disable-sends'],
                             help="Which action to perform. 'list': list all sessions, "
-                            "'download': download session data, 'get-sends-enable': check if "
+                            "'download': download session data, 'get-sends-enabled': check if "
                             "watch is set to automatically send session data to the phone, "
                             "'enable-sends': enable automatic sends of session data to phone, "
                             "'disable-sends': disable automatic sends of session data to phone")
