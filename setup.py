@@ -1,17 +1,39 @@
 __author__ = 'katharine'
 
+import sys
 from setuptools import setup, find_packages
 
-setup(name='libpebble2',
-      version='0.0.0',
+requires = [
+    'libpebble2==0.0.10',
+    'httplib2==0.9.1',
+    'oauth2client==1.4.12',
+    'progressbar2==2.7.3',
+    'pyasn1==0.1.8',
+    'pyasn1-modules==0.0.6',
+    'pypng==0.0.17',
+    'pyqrcode==1.1',
+    'requests==2.7.0',
+    'rsa==3.1.4',
+    'pyserial==2.7',
+    'six==1.9.0',
+    'websocket-client==0.32.0',
+    'wheel==0.24.0',
+    'colorama==0.3.3',
+]
+
+if sys.version_info < (3, 4, 0):
+    requires.append('enum34==1.0.4')
+
+setup(name='pebble-tool',
+      version='3.6',
       description='Tool for interacting with pebbles.',
       url='https://github.com/pebble/pebble-tool',
       author='Pebble Technology Corporation',
       author_email='katharine@pebble.com',
       license='MIT',
       packages=find_packages(),
-
-      install_requires=[
-        'git+ssh://git@github.com/pebble/kb-libpebble2.git@e4323b5',
-      ],
+      install_requires=requires,
+      entry_points={
+          'console_scripts': ['pebble=pebble_tool:run_tool'],
+      },
       zip_safe=True)
