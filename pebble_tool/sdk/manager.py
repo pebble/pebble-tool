@@ -5,6 +5,7 @@ import json
 import os
 from progressbar import ProgressBar, Percentage, Bar, FileTransferSpeed, Timer
 import requests
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -39,6 +40,17 @@ class SDKManager(object):
         sdks = self.request("/v1/files/sdk-core").json()
         return sdks['files']
 
+    def uninstall_sdk(self, version):
+        current_sdk = self.get_current_sdk()
+        shutil.rmtree(self.path_for_sdk(version))
+        if current_sdk == version:
+            # TODO: This is going to make odd choices if we get past x.9.
+            current_sdks = sorted(self.list_local_sdks(), reverse=True)
+            if len(current_sdks) > 0:
+                self.set_current_sdk(current_sdks[0])
+            else:
+                os.unlink(self._current_path)
+
     def install_remote_sdk(self, version):
         sdk_info = self.request("/v1/files/sdk-core/{}".format(version)).json()
         path = os.path.normpath(os.path.join(self.sdk_dir, sdk_info['version']))
@@ -68,9 +80,9 @@ class SDKManager(object):
                 os.mkdir(os.path.join(self.sdk_dir, sdk_info['version']))
                 t.extractall(path)
         virtualenv_path = os.path.join(path, ".env")
-        print("Preparing virtualenv.")
+        print("Preparing virtualenv... (this may take a while)")
         subprocess.check_call([sys.executable, "-m", "virtualenv", virtualenv_path, "--no-site-packages"])
-        print("Installing dependencies.")
+        print("Installing dependencies...")
         subprocess.check_call([os.path.join(virtualenv_path, "bin", "python"), "-m", "pip", "install", "-r",
                                os.path.join(path, "sdk-core", "requirements.txt")])
         print("Done.")

@@ -26,9 +26,13 @@ class SDKManager(BaseCommand):
         install_parser.add_argument('version', help="Version to install, or 'latest' for the latest.")
         install_parser.set_defaults(sub_func=cls.do_install)
 
-        install_parser = subparsers.add_parser("activate", help="Makes the given, installed SDK active.")
-        install_parser.add_argument('version', help="Version to make active.")
-        install_parser.set_defaults(sub_func=cls.do_activate)
+        activate_parser = subparsers.add_parser("activate", help="Makes the given, installed SDK active.")
+        activate_parser.add_argument('version', help="Version to make active.")
+        activate_parser.set_defaults(sub_func=cls.do_activate)
+
+        uninstall_parser = subparsers.add_parser("uninstall", help="Uninstalls the given SDK.")
+        uninstall_parser.add_argument('version', help="Version to uninstall.")
+        uninstall_parser.set_defaults(sub_func=cls.do_uninstall)
         return parser
 
     @classmethod
@@ -53,6 +57,12 @@ class SDKManager(BaseCommand):
         print("Installing SDK...")
         sdk_manager.install_remote_sdk(args.version)
         print("Installed.")
+
+    @classmethod
+    def do_uninstall(cls, args):
+        print("Uninstalling SDK {}...".format(args.version))
+        sdk_manager.uninstall_sdk(args.version)
+        print("Done.")
 
     @classmethod
     def do_activate(cls, args):
