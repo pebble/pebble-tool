@@ -61,6 +61,7 @@ class SDKManager(object):
                                    Timer(format='%s')])
         bar.start()
         response = requests.get(sdk_info['url'], stream=True)
+        response.raise_for_status()
         bar.maxval = int(response.headers['Content-Length'])
         with tempfile.TemporaryFile() as f:
             for content in response.iter_content(512):
@@ -99,7 +100,9 @@ class SDKManager(object):
         os.symlink(path, self._current_path)
 
     def get_current_sdk(self):
-        manifest_path = os.path.join(self._current_path, "sdk-core", "manifest.json")
+        if self.current_path is None:
+            return None
+        manifest_path = os.path.join(self.current_path, "manifest.json")
         if not os.path.exists(manifest_path):
             return None
         with open(manifest_path) as f:
@@ -110,7 +113,7 @@ class SDKManager(object):
         path = self._current_path
         if not os.path.exists(path):
             return None
-        return path
+        return os.path.join(path, 'sdk-core')
 
     @property
     def _current_path(self):
@@ -120,7 +123,7 @@ class SDKManager(object):
         return requests.get("{}{}".format(self.DOWNLOAD_SERVER, path), *args)
 
     def path_for_sdk(self, version):
-        path = os.path.join(self.sdk_dir, version)
+        path = os.path.join(self.sdk_dir, version, 'sdk-core')
         if not os.path.exists(path):
             raise MissingSDK("SDK {} is not installed.".format(version))
         return path

@@ -15,8 +15,7 @@ class PingCommand(PebbleCommand):
     def __call__(self, args):
         super(PingCommand, self).__call__(args)
         cookie = random.randint(1, 0xFFFFFFFF)
-        self.pebble.send_packet(PingPong(cookie=cookie, message=Ping(idle=False)))
-        pong = self.pebble.read_from_endpoint(PingPong)
+        pong = self.pebble.send_and_read(PingPong(cookie=cookie, message=Ping(idle=False)), PingPong)
         if pong.cookie == cookie:
             print("Pong!")
         else:

@@ -3,6 +3,7 @@ __author__ = 'katharine'
 
 import os
 import subprocess
+import logging
 
 from pebble_tool.exceptions import (ToolError, MissingSDK, PebbleProjectException, InvalidJSONException,
                                     InvalidProjectException, OutdatedProjectException)
@@ -11,17 +12,20 @@ from pebble_tool.sdk.project import PebbleProject
 from pebble_tool.util.analytics import post_event
 from ..base import BaseCommand
 
+logger = logging.getLogger("pebble_tool.commands.sdk")
+
 
 class SDKCommand(BaseCommand):
     def get_sdk_path(self):
         path = sdk_manager.path_for_sdk(self.sdk) if self.sdk is not None else sdk_path()
-        if not os.path.exists(os.path.join(path, 'sdk-core', 'Pebble', 'waf')):
+        logger.debug("SDK path: %s", path)
+        if not os.path.exists(os.path.join(path, 'Pebble', 'waf')):
             raise MissingSDK("SDK unavailable; can't run this command.")
         return path
 
     @property
     def waf_path(self):
-        return os.path.join(self.get_sdk_path(), 'sdk-core', 'Pebble', 'waf')
+        return os.path.join(self.get_sdk_path(), 'Pebble', 'waf')
 
     @classmethod
     def add_parser(cls, parser):
@@ -56,8 +60,9 @@ class SDKCommand(BaseCommand):
         if self._verbosity > 0:
             v = '-' + ('v' * self._verbosity)
             args = [v] + args
-        subprocess.check_call([os.path.join(self.get_sdk_path(), '.env', 'bin', 'python'), self.waf_path, command] + args)
-        print([os.path.join(self.get_sdk_path(), '.env', 'bin', 'python'), self.waf_path, command] + args)
+        command = [os.path.join(self.get_sdk_path(), '../', '.env', 'bin', 'python'), self.waf_path, command] + args
+        logger.debug("Build command: %s", subprocess.list2cmdline(command))
+        subprocess.check_call(command)
 
     def __call__(self, args):
         super(SDKCommand, self).__call__(args)

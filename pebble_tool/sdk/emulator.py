@@ -122,12 +122,11 @@ class ManagedEmulatorTransport(WebsocketTransport):
 
 
     def _spawn_qemu(self):
-        qemu_bin = os.path.join(sdk_path(), 'Pebble', 'common', 'qemu',
-                                'qemu-system-arm_{}_{}'.format(platform.system(), platform.machine()))
-        qemu_micro_flash = os.path.join(sdk_path(), 'Pebble', self.platform, 'qemu', "qemu_micro_flash.bin")
+        qemu_bin = os.environ.get('PEBBLE_QEMU_PATH', 'qemu-pebble')
+        qemu_micro_flash = os.path.join(sdk_path(), 'pebble', self.platform, 'qemu', "qemu_micro_flash.bin")
         qemu_spi_flash = self._get_spi_path()
 
-        for path in (qemu_bin, qemu_micro_flash, qemu_spi_flash):
+        for path in (qemu_micro_flash, qemu_spi_flash):
             if not os.path.exists(path):
                 raise MissingEmulatorError("Can't launch emulator: missing required file at {}".format(path))
 
@@ -195,7 +194,7 @@ class ManagedEmulatorTransport(WebsocketTransport):
         logger.info("Firmware booted.")
 
     def _copy_spi_image(self, path):
-        sdk_qemu_spi_flash = os.path.join(sdk_path(), 'Pebble', self.platform, 'qemu', 'qemu_spi_flash.bin')
+        sdk_qemu_spi_flash = os.path.join(sdk_path(), 'pebble', self.platform, 'qemu', 'qemu_spi_flash.bin.bz2')
         if not os.path.exists(sdk_qemu_spi_flash):
             raise MissingEmulatorError("Your SDK does not support the Pebble Emulator.")
         else:
@@ -223,7 +222,7 @@ class ManagedEmulatorTransport(WebsocketTransport):
         return path
 
     def _spawn_pypkjs(self):
-        phonesim_bin = os.path.join(sdk_path(), 'Pebble', 'common', 'phonesim', 'phonesim.py')
+        phonesim_bin = os.environ.get('PHONESIM_PATH', 'phonesim.py')
         layout_file = os.path.join(sdk_path(), 'Pebble', self.platform, 'qemu', "layouts.json")
 
         command = [

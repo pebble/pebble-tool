@@ -22,7 +22,7 @@ def run_tool(args=None):
     logging.basicConfig()
     analytics_prompt()
     parser = argparse.ArgumentParser(description="Pebble Tool", prog="pebble")
-    parser.add_argument("--version", action="version", version="Pebble SDK {}".format(sdk_version()))
+    parser.add_argument("--version", action="version", version="Pebble Tool v4.0")
     register_children(parser)
     args = parser.parse_args(args)
     if not hasattr(args, 'func'):
