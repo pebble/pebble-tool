@@ -60,8 +60,8 @@ class SDKCommand(BaseCommand):
         if self._verbosity > 0:
             v = '-' + ('v' * self._verbosity)
             args = [v] + args
-        command = [os.path.join(self.get_sdk_path(), '../', '.env', 'bin', 'python'), self.waf_path, command] + args
-        logger.debug("Build command: %s", subprocess.list2cmdline(command))
+        command = [os.path.join(self.get_sdk_path(), '..', '.env', 'bin', 'python'), self.waf_path, command] + args
+        logger.debug("waf command: %s", subprocess.list2cmdline(command))
         subprocess.check_call(command)
 
     def __call__(self, args):

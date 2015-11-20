@@ -42,7 +42,7 @@ class SDKManager(object):
 
     def uninstall_sdk(self, version):
         current_sdk = self.get_current_sdk()
-        shutil.rmtree(self.path_for_sdk(version))
+        shutil.rmtree(self.root_path_for_sdk(version))
         if current_sdk == version:
             # TODO: This is going to make odd choices if we get past x.9.
             current_sdks = sorted(self.list_local_sdks(), reverse=True)
@@ -122,8 +122,14 @@ class SDKManager(object):
     def request(self, path, *args):
         return requests.get("{}{}".format(self.DOWNLOAD_SERVER, path), *args)
 
+    def root_path_for_sdk(self, version):
+        path = os.path.join(self.sdk_dir, version)
+        if not os.path.exists(path):
+            raise MissingSDK("SDK {} is not installed.".format(version))
+        return path
+
     def path_for_sdk(self, version):
-        path = os.path.join(self.sdk_dir, version, 'sdk-core')
+        path = os.path.join(self.root_path_for_sdk(version), 'sdk-core')
         if not os.path.exists(path):
             raise MissingSDK("SDK {} is not installed.".format(version))
         return path
