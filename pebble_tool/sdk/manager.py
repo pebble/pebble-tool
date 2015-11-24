@@ -109,6 +109,8 @@ class SDKManager(object):
 
     def install_remote_sdk(self, version):
         sdk_info = self.request("/v1/files/sdk-core/{}".format(version)).json()
+        if 'version' not in sdk_info:
+            raise SDKInstallError("SDK {} could not be downloaded.".format(version))
         path = os.path.normpath(os.path.join(self.sdk_dir, sdk_info['version']))
         if os.path.exists(path):
             raise SDKInstallError("SDK {} is already installed.".format(sdk_info['version']))
