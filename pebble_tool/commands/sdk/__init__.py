@@ -7,7 +7,7 @@ import logging
 
 from pebble_tool.exceptions import (ToolError, MissingSDK, PebbleProjectException, InvalidJSONException,
                                     InvalidProjectException, OutdatedProjectException)
-from pebble_tool.sdk import get_arm_tools_path, sdk_path, sdk_manager
+from pebble_tool.sdk import add_tools_to_path, sdk_path, sdk_manager
 from pebble_tool.sdk.project import PebbleProject
 from pebble_tool.util.analytics import post_event
 from ..base import BaseCommand
@@ -35,7 +35,7 @@ class SDKCommand(BaseCommand):
         return parser
 
     def add_arm_tools_to_path(self):
-        os.environ['PATH'] += ":{}".format(get_arm_tools_path())
+        add_tools_to_path()
 
     def _fix_python(self):
         # First figure out what 'python' means:

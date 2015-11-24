@@ -16,8 +16,8 @@ from libpebble2.protocol.logs import AppLogMessage, AppLogShippingControl
 from libpebble2.communication.transports.websocket import MessageTargetPhone
 from libpebble2.communication.transports.websocket.protocol import WebSocketPhoneAppLog, WebSocketConnectionStatusUpdate
 
-from pebble_tool.exceptions import PebbleProjectException, MissingSDK
-from pebble_tool.sdk import get_arm_tools_path
+from pebble_tool.exceptions import PebbleProjectException
+from pebble_tool.sdk import add_tools_to_path
 from pebble_tool.sdk.project import PebbleProject
 from colorama import Fore, Back, Style
 
@@ -55,10 +55,7 @@ class PebbleLogPrinter(object):
                                                                self.handle_phone_log))
         self.handles.append(pebble.register_transport_endpoint(MessageTargetPhone, WebSocketConnectionStatusUpdate,
                                                                self.handle_connection))
-        try:
-            os.environ['PATH'] += ":{}".format(get_arm_tools_path())
-        except MissingSDK:
-            pass
+        add_tools_to_path()
 
     def _print(self, packet, message):
         colour = self._get_colour(packet)
