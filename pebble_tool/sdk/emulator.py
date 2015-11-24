@@ -185,7 +185,12 @@ class ManagedEmulatorTransport(WebsocketTransport):
             raise ToolError("Emulator launch timed out.")
         received = ''
         while True:
-            received += s.recv(256)
+            try:
+                received += s.recv(256)
+            except socket.error as e:
+                # Ignore "Interrupted system call"
+                if e.errno != errno.EINTR:
+                    raise
             # PBL-21275: we'll add less hacky solutions for this to the firmware.
             if "<SDK Home>" in received or "<Launcher>" in received:
                 break
