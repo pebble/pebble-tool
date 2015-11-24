@@ -23,7 +23,7 @@ from libpebble2.exceptions import ConnectionError
 from pebble_tool.account import get_default_account
 from pebble_tool.exceptions import MissingEmulatorError, ToolError
 from pebble_tool.util.analytics import post_event
-from . import sdk_path, get_sdk_persist_dir
+from . import sdk_path, get_sdk_persist_dir, sdk_manager
 
 logger = logging.getLogger("pebble_tool.sdk.emulator")
 black_hole = open(os.devnull, 'w')
@@ -216,6 +216,11 @@ class ManagedEmulatorTransport(WebsocketTransport):
     def _get_spi_path(self, platform=None):
         if platform is None:
             platform = self.platform
+
+        if sdk_manager.get_current_sdk() == 'tintin':
+            sdk_qemu_spi_flash = os.path.join(sdk_path(), 'pebble', platform, 'qemu', 'qemu_spi_flash.bin')
+            return sdk_qemu_spi_flash
+
         path = os.path.join(get_sdk_persist_dir(platform), 'qemu_spi_flash.bin')
         if not os.path.exists(path):
             self._copy_spi_image(path)

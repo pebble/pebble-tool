@@ -1,6 +1,8 @@
 from __future__ import absolute_import, print_function
 __author__ = "katharine"
 
+import os
+import re
 import requests
 
 from ..base import BaseCommand
@@ -25,7 +27,9 @@ class SDKManager(BaseCommand):
         list_parser.set_defaults(sub_func=cls.do_list)
 
         install_parser = subparsers.add_parser("install", help="Installs the given SDK.")
-        install_parser.add_argument('version', help="Version to install, or 'latest' for the latest.")
+        group = install_parser.add_mutually_exclusive_group(required=True)
+        group.add_argument('version', nargs='?', help="Version to install, or 'latest' for the latest.")
+        group.add_argument('--tintin', help="Path to a copy of the tintin source (internal only).")
         install_parser.set_defaults(sub_func=cls.do_install)
 
         activate_parser = subparsers.add_parser("activate", help="Makes the given, installed SDK active.")
@@ -72,7 +76,15 @@ class SDKManager(BaseCommand):
     @classmethod
     def do_install(cls, args):
         print("Installing SDK...")
-        sdk_manager.install_remote_sdk(args.version)
+        if args.tintin:
+            sdk_manager.make_tintin_sdk(args.tintin)
+        else:
+            if re.match("https?://", args.version):
+                sdk_manager.install_from_url(args.version)
+            elif os.path.exists(args.version):
+                sdk_manager.install_from_path(args.version)
+            else:
+                sdk_manager.install_remote_sdk(args.version)
         print("Installed.")
 
     @classmethod

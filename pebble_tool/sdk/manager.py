@@ -1,6 +1,7 @@
 from __future__ import absolute_import, print_function
 __author__ = 'katharine'
 
+from contextlib import closing
 from distutils.util import strtobool
 import json
 import os
@@ -14,6 +15,8 @@ import tarfile
 
 from pebble_tool.exceptions import SDKInstallError, MissingSDK
 from pebble_tool.util import get_persist_dir
+
+pebble_platforms = ('aplite', 'basalt', 'chalk')
 
 
 class SDKManager(object):
@@ -58,17 +61,12 @@ class SDKManager(object):
             else:
                 os.unlink(self._current_path)
 
-    def install_remote_sdk(self, version):
-        sdk_info = self.request("/v1/files/sdk-core/{}".format(version)).json()
-        path = os.path.normpath(os.path.join(self.sdk_dir, sdk_info['version']))
-        if os.path.exists(path):
-            raise SDKInstallError("SDK {} is already installed.".format(sdk_info['version']))
-        self._license_prompt()
+    def install_from_url(self, url):
         print("Downloading...")
         bar = ProgressBar(widgets=[Percentage(), Bar(marker='=', left='[', right=']'), ' ', FileTransferSpeed(), ' ',
                                    Timer(format='%s')])
         bar.start()
-        response = requests.get(sdk_info['url'], stream=True)
+        response = requests.get(url, stream=True)
         response.raise_for_status()
         bar.maxval = int(response.headers['Content-Length'])
         with tempfile.TemporaryFile() as f:
@@ -78,25 +76,44 @@ class SDKManager(object):
             bar.finish()
             f.flush()
             f.seek(0)
-            print("Extracting...")
-            with tarfile.open(fileobj=f, mode="r:*") as t:
-                contents = t.getnames()
-                for filename in contents:
-                    if filename.startswith('/') or '..' in filename:
-                        raise SDKInstallError("SDK contained a questionable file: {}".format(filename))
-                if not path.startswith(self.sdk_dir):
-                    raise SDKInstallError("Suspicious version number: {}".format(sdk_info['version']))
-                os.mkdir(os.path.join(self.sdk_dir, sdk_info['version']))
-                t.extractall(path)
+            self._install_from_handle(f)
+
+    def install_from_file(self, path):
+        with open(path) as f:
+            self._install_from_handle(f)
+
+    def _install_from_handle(self, f):
+        print("Extracting...")
+        with tarfile.open(fileobj=f, mode="r:*") as t:
+            with closing(t.extractfile('sdk-core/manifest.json')) as f_manifest:
+                sdk_info = json.load(f_manifest)
+            path = os.path.normpath(os.path.join(self.sdk_dir, sdk_info['version']))
+            if os.path.exists(path):
+                raise SDKInstallError("SDK {} is already installed.".format(sdk_info['version']))
+            contents = t.getnames()
+            for filename in contents:
+                if filename.startswith('/') or '..' in filename:
+                    raise SDKInstallError("SDK contained a questionable file: {}".format(filename))
+            if not path.startswith(self.sdk_dir):
+                raise SDKInstallError("Suspicious version number: {}".format(sdk_info['version']))
+            os.mkdir(os.path.join(self.sdk_dir, sdk_info['version']))
+            t.extractall(path)
         virtualenv_path = os.path.join(path, ".env")
         print("Preparing virtualenv... (this may take a while)")
         subprocess.check_call([sys.executable, "-m", "virtualenv", virtualenv_path, "--no-site-packages"])
         print("Installing dependencies...")
         subprocess.check_call([os.path.join(virtualenv_path, "bin", "python"), "-m", "pip", "install", "-r",
                                os.path.join(path, "sdk-core", "requirements.txt")])
+        self.set_current_sdk(sdk_info['version'])
         print("Done.")
 
-        self.set_current_sdk(sdk_info['version'])
+    def install_remote_sdk(self, version):
+        sdk_info = self.request("/v1/files/sdk-core/{}".format(version)).json()
+        path = os.path.normpath(os.path.join(self.sdk_dir, sdk_info['version']))
+        if os.path.exists(path):
+            raise SDKInstallError("SDK {} is already installed.".format(sdk_info['version']))
+        self._license_prompt()
+        self.install_from_url(sdk_info['url'])
 
     def _license_prompt(self):
         prompt = """To use the Pebble SDK, you must agree to the following:
@@ -137,6 +154,67 @@ https://developer.getpebble.com/legal/sdk-license
             return None
         with open(manifest_path) as f:
             return json.load(f)['version']
+
+    def make_tintin_sdk(self, path):
+        dest_path = os.path.join(self.sdk_dir, 'tintin')
+        if not os.path.exists(os.path.join(path, 'wscript')):
+            raise SDKInstallError("No tintin found at {}".format(path))
+        if os.path.exists(dest_path):
+            raise SDKInstallError("tintin SDK already set up. uninstall before making changes.")
+        build_path = os.path.join(path, 'build')
+        sdk_path = os.path.join(build_path, 'sdk')
+        os.mkdir(dest_path)
+        env_path = os.path.join(dest_path, '.env')
+        if os.path.isdir(os.path.join(path, '.env')):
+            os.symlink(os.path.join(path, '.env'), env_path)
+        dest_path = os.path.join(dest_path, 'sdk-core')
+        os.mkdir(os.path.join(dest_path))
+        pebble_path = os.path.join(dest_path, 'pebble')
+        os.mkdir(pebble_path)
+
+        # A symlink doesn't work for some reason; instead write a python script that invokes waf using whatever
+        # interpreter we used to invoke it.
+        with open(os.path.join(pebble_path, 'waf'), 'w') as f:
+            f.write("""#!/usr/bin/env python
+import subprocess
+import sys
+subprocess.call([sys.executable, {}] + sys.argv[1:])
+""".format(repr(os.path.join(sdk_path, 'waf'))))
+            os.chmod(os.path.join(pebble_path, 'waf'), 0o755)
+        for platform in pebble_platforms:
+            os.mkdir(os.path.join(pebble_path, platform))
+            os.symlink(os.path.join(sdk_path, platform, 'include'), os.path.join(pebble_path, platform, 'include'))
+            os.symlink(os.path.join(sdk_path, platform, 'lib'), os.path.join(pebble_path, platform, 'lib'))
+            os.mkdir(os.path.join(pebble_path, platform, 'qemu'))
+            os.symlink(os.path.join(build_path, 'qemu_micro_flash.bin'),
+                       os.path.join(pebble_path, platform, 'qemu', 'qemu_micro_flash.bin'))
+            os.symlink(os.path.join(build_path, 'qemu_spi_flash.bin'),
+                       os.path.join(pebble_path, platform, 'qemu', 'qemu_spi_flash.bin'))
+
+        with open(os.path.join(dest_path, 'manifest.json'), 'w') as f:
+            json.dump({
+                'requirements': [],
+                'version': 'tintin',
+                'type': 'sdk-core',
+                'channel': '',
+            }, f)
+
+        if not os.path.exists(env_path):
+            print("Couldn't find a virtualenv to reuse at {}; making one.".format(os.path.join(path, '.env')))
+            print("Preparing virtualenv... (this may take a while)")
+            subprocess.check_call([sys.executable, "-m", "virtualenv", env_path, "--no-site-packages"])
+            print("Installing dependencies...")
+            if sys.platform.startswith('darwin'):
+                platform = 'osx'
+            elif sys.platform.startswith('linux'):
+                platform = 'linux'
+            else:
+                raise SDKInstallError("Couldn't figure out what requirements to install.")
+            subprocess.check_call([os.path.join(env_path, "bin", "python"), "-m", "pip", "install", "-r",
+                                   os.path.join(path, "requirements-{}.txt".format(platform))])
+
+        self.set_current_sdk('tintin')
+        print("Generated an SDK linked to {}.".format(path))
 
     @property
     def current_path(self):
