@@ -1,6 +1,8 @@
 from __future__ import absolute_import, print_function
 __author__ = "katharine"
 
+import requests
+
 from ..base import BaseCommand
 from pebble_tool.sdk import sdk_manager
 
@@ -37,20 +39,35 @@ class SDKManager(BaseCommand):
 
     @classmethod
     def do_list(cls, args):
-        local_sdks = sdk_manager.list_local_sdks()
         current_sdk = sdk_manager.get_current_sdk()
+        local_sdks = sdk_manager.list_local_sdks()
+        local_sdk_versions = sdk_manager.list_local_sdk_versions()
+        if len(local_sdks) > 0:
+            print("Installed SDKs:")
+            for sdk in local_sdks:
+                line = sdk['version']
+                if sdk['channel']:
+                    line += " ({})".format(sdk['channel'])
+                if sdk['version'] == current_sdk:
+                    line += " (active)"
+                print(line)
+            print()
+        else:
+            print("No SDKs installed yet.")
         print("Available SDKs:")
-        for sdk in sdk_manager.list_remote_sdks():
-            if sdk['version'] in local_sdks:
-                line = ' * '
-            else:
-                line = '   '
-            line += sdk['version']
-            if sdk['channel']:
-                line += " ({})".format(sdk['channel'])
-            if sdk['version'] == current_sdk:
-                line += " (active)"
-            print(line)
+        try:
+            for sdk in sdk_manager.list_remote_sdks():
+                if sdk['version'] in local_sdk_versions:
+                    continue
+                line = sdk['version']
+                if sdk['channel']:
+                    line += " ({})".format(sdk['channel'])
+                if sdk['version'] == current_sdk:
+                    line += " (active)"
+                print(line)
+        except requests.RequestException:
+            print("Could not fetch list of available SDKs.")
+
 
     @classmethod
     def do_install(cls, args):

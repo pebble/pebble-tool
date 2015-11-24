@@ -1,6 +1,7 @@
 from __future__ import absolute_import, print_function
 __author__ = 'katharine'
 
+from distutils.util import strtobool
 import json
 import os
 from progressbar import ProgressBar, Percentage, Bar, FileTransferSpeed, Timer
@@ -25,7 +26,10 @@ class SDKManager(object):
     def list_local_sdks(self):
         sdks = []
         for dir in os.listdir(self.sdk_dir):
-            manifest_path = os.path.join(self.sdk_dir, dir, 'sdk-core', 'manifest.json')
+            dir = os.path.join(self.sdk_dir, dir)
+            if os.path.islink(dir):
+                continue
+            manifest_path = os.path.join(dir, 'sdk-core', 'manifest.json')
             if not os.path.exists(manifest_path):
                 continue
             with open(manifest_path) as f:
@@ -34,7 +38,10 @@ class SDKManager(object):
                 except ValueError:
                     pass
 
-        return {x['version'] for x in sdks}
+        return sdks
+
+    def list_local_sdk_versions(self):
+        return {x['version'] for x in self.list_local_sdks()}
 
     def list_remote_sdks(self):
         sdks = self.request("/v1/files/sdk-core").json()
@@ -45,7 +52,7 @@ class SDKManager(object):
         shutil.rmtree(self.root_path_for_sdk(version))
         if current_sdk == version:
             # TODO: This is going to make odd choices if we get past x.9.
-            current_sdks = sorted(self.list_local_sdks(), reverse=True)
+            current_sdks = sorted(self.list_local_sdk_versions(), reverse=True)
             if len(current_sdks) > 0:
                 self.set_current_sdk(current_sdks[0])
             else:
@@ -56,6 +63,7 @@ class SDKManager(object):
         path = os.path.normpath(os.path.join(self.sdk_dir, sdk_info['version']))
         if os.path.exists(path):
             raise SDKInstallError("SDK {} is already installed.".format(sdk_info['version']))
+        self._license_prompt()
         print("Downloading...")
         bar = ProgressBar(widgets=[Percentage(), Bar(marker='=', left='[', right=']'), ' ', FileTransferSpeed(), ' ',
                                    Timer(format='%s')])
@@ -89,6 +97,28 @@ class SDKManager(object):
         print("Done.")
 
         self.set_current_sdk(sdk_info['version'])
+
+    def _license_prompt(self):
+        prompt = """To use the Pebble SDK, you must agree to the following:
+
+PEBBLE TERMS OF USE
+https://developer.getpebble.com/legal/terms-of-use
+
+PEBBLE DEVELOPER LICENSE
+https://developer.getpebble.com/legal/sdk-license
+"""
+        print(prompt)
+        result = False
+        while True:
+            try:
+                result = strtobool(raw_input("Do you accept the Pebble Terms of Use and the "
+                                             "Pebble Developer License? (y/n) "))
+            except ValueError:
+                pass
+            else:
+                break
+        if not result:
+            raise SDKInstallError("You must accept the Terms of Use and Developer License to install an SDK.")
 
     def set_current_sdk(self, version):
         path = os.path.join(self.sdk_dir, version)
