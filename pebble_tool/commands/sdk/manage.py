@@ -1,6 +1,7 @@
 from __future__ import absolute_import, print_function
 __author__ = "katharine"
 
+import collections
 import os
 import re
 import requests
@@ -46,9 +47,10 @@ class SDKManager(BaseCommand):
         current_sdk = sdk_manager.get_current_sdk()
         local_sdks = sdk_manager.list_local_sdks()
         local_sdk_versions = sdk_manager.list_local_sdk_versions()
+        sorted_local_sdks = sorted(local_sdks, key=lambda x: x['version'], reverse=True)
         if len(local_sdks) > 0:
             print("Installed SDKs:")
-            for sdk in local_sdks:
+            for sdk in sorted_local_sdks:
                 line = sdk['version']
                 if sdk['channel']:
                     line += " ({})".format(sdk['channel'])
