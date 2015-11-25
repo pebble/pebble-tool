@@ -14,7 +14,7 @@ SDK_VERSION = '3'
 
 
 def sdk_path():
-    path = (os.getenv('PEBBLE_SDK_PATH', None) or sdk_manager.current_path)
+    path = sdk_manager.current_path
     if path is None:
         print("No SDK installed; installing the latest one...")
         sdk_manager.install_remote_sdk("latest")

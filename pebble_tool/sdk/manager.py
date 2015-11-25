@@ -139,6 +139,8 @@ https://developer.getpebble.com/legal/sdk-license
 
     def set_current_sdk(self, version):
         path = os.path.join(self.sdk_dir, version)
+        if not os.path.exists(path):
+            raise SDKInstallError("SDK version {} is not currently installed.".format(version))
         # PBL-24516: This isn't going to play nice on Windows.
         try:
             os.unlink(self._current_path)
