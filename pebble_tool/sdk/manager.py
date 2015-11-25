@@ -20,7 +20,7 @@ pebble_platforms = ('aplite', 'basalt', 'chalk')
 
 
 class SDKManager(object):
-    DOWNLOAD_SERVER = "https://pebble-sdk-server-staging.herokuapp.com"
+    DOWNLOAD_SERVER = "https://sdk.getpebble.com"
     def __init__(self, sdk_dir=None):
         self.sdk_dir = os.path.normpath(sdk_dir or os.path.join(get_persist_dir(), "SDKs"))
         if not os.path.exists(self.sdk_dir):
@@ -78,34 +78,46 @@ class SDKManager(object):
             f.seek(0)
             self._install_from_handle(f)
 
-    def install_from_file(self, path):
+    def install_from_path(self, path):
         with open(path) as f:
             self._install_from_handle(f)
 
     def _install_from_handle(self, f):
-        print("Extracting...")
-        with tarfile.open(fileobj=f, mode="r:*") as t:
-            with closing(t.extractfile('sdk-core/manifest.json')) as f_manifest:
-                sdk_info = json.load(f_manifest)
-            path = os.path.normpath(os.path.join(self.sdk_dir, sdk_info['version']))
-            if os.path.exists(path):
-                raise SDKInstallError("SDK {} is already installed.".format(sdk_info['version']))
-            contents = t.getnames()
-            for filename in contents:
-                if filename.startswith('/') or '..' in filename:
-                    raise SDKInstallError("SDK contained a questionable file: {}".format(filename))
-            if not path.startswith(self.sdk_dir):
-                raise SDKInstallError("Suspicious version number: {}".format(sdk_info['version']))
-            os.mkdir(os.path.join(self.sdk_dir, sdk_info['version']))
-            t.extractall(path)
-        virtualenv_path = os.path.join(path, ".env")
-        print("Preparing virtualenv... (this may take a while)")
-        subprocess.check_call([sys.executable, "-m", "virtualenv", virtualenv_path, "--no-site-packages"])
-        print("Installing dependencies...")
-        subprocess.check_call([os.path.join(virtualenv_path, "bin", "python"), "-m", "pip", "install", "-r",
-                               os.path.join(path, "sdk-core", "requirements.txt")])
-        self.set_current_sdk(sdk_info['version'])
-        print("Done.")
+        path = None
+        try:
+            print("Extracting...")
+            with tarfile.open(fileobj=f, mode="r:*") as t:
+                with closing(t.extractfile('sdk-core/manifest.json')) as f_manifest:
+                    sdk_info = json.load(f_manifest)
+                path = os.path.normpath(os.path.join(self.sdk_dir, sdk_info['version']))
+                if os.path.exists(path):
+                    raise SDKInstallError("SDK {} is already installed.".format(sdk_info['version']))
+                contents = t.getnames()
+                for filename in contents:
+                    if filename.startswith('/') or '..' in filename:
+                        raise SDKInstallError("SDK contained a questionable file: {}".format(filename))
+                if not path.startswith(self.sdk_dir):
+                    raise SDKInstallError("Suspicious version number: {}".format(sdk_info['version']))
+                os.mkdir(os.path.join(self.sdk_dir, sdk_info['version']))
+                t.extractall(path)
+            virtualenv_path = os.path.join(path, ".env")
+            print("Preparing virtualenv... (this may take a while)")
+            subprocess.check_call([sys.executable, "-m", "virtualenv", virtualenv_path, "--no-site-packages"])
+            print("Installing dependencies...")
+            subprocess.check_call([os.path.join(virtualenv_path, "bin", "python"), "-m", "pip", "install", "-r",
+                                   os.path.join(path, "sdk-core", "requirements.txt")])
+            self.set_current_sdk(sdk_info['version'])
+            print("Done.")
+        except Exception:
+            print("Failed.")
+            try:
+                if path is not None and os.path.exists(path):
+                    print("Cleaning up failed install...")
+                    shutil.rmtree(path)
+                    print("Done.")
+            except OSError:
+                print("Cleanup failed.")
+            raise
 
     def install_remote_sdk(self, version):
         sdk_info = self.request("/v1/files/sdk-core/{}".format(version)).json()
