@@ -8,6 +8,7 @@ import uuid
 SDK_VERSION = "3"
 
 from pebble_tool.exceptions import InvalidProjectException, InvalidJSONException, OutdatedProjectException
+from pebble_tool.sdk import sdk_version
 from . import pebble_platforms
 
 
@@ -38,10 +39,12 @@ class PebbleProject(object):
 
         if os.path.islink(os.path.join(project_dir, 'pebble_app.ld')) \
                 or os.path.exists(os.path.join(project_dir, 'resources/src/resource_map.json')) \
-                or not os.path.exists(os.path.join(project_dir, 'wscript')) \
-                or 'sdkVersion' not in app_info \
-                or app_info.get("sdkVersion", None) != SDK_VERSION:
-            raise OutdatedProjectException("This project is outdated (try 'pebble convert-project').")
+                or not os.path.exists(os.path.join(project_dir, 'wscript')):
+            raise OutdatedProjectException("This project is very outdated, and cannot be handled by this SDK.")
+        if app_info.get("sdkVersion", None) != SDK_VERSION:
+            if sdk_version() != '2.9':
+                raise OutdatedProjectException("This projected is outdated (try 'pebble convert-project' or"
+                                               "'pebble sdk install 2.9')")
 
     def _parse_project(self):
         with open(os.path.join(self.project_dir, 'appinfo.json')) as f:
@@ -52,7 +55,7 @@ class PebbleProject(object):
         self.long_name = self.appinfo['longName']
         self.company_name = self.appinfo['companyName']
         self.version = self.appinfo['versionLabel']
-        self.sdk_version = self.appinfo['sdkVersion']
+        self.sdk_version = self.appinfo.get('sdkVersion', 2)
         self.target_platforms = self.appinfo.get('targetPlatforms', pebble_platforms)
         self.capabilities = self.appinfo.get('capabilities', [])
 
