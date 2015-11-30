@@ -25,7 +25,7 @@ if sys.version_info < (3, 4, 0):
     requires.append('enum34==1.0.4')
 
 setup(name='pebble-tool',
-      version='3.6',
+      version='4.0',
       description='Tool for interacting with pebbles.',
       url='https://github.com/pebble/pebble-tool',
       author='Pebble Technology Corporation',
