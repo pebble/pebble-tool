@@ -15,8 +15,8 @@ from libpebble2.exceptions import ConnectionError
 from libpebble2.protocol.system import TimeMessage, SetUTC
 
 from pebble_tool.exceptions import ToolError
-from pebble_tool.sdk import pebble_platforms
-from pebble_tool.sdk.emulator import ManagedEmulatorTransport
+from pebble_tool.sdk import pebble_platforms, sdk_version
+from pebble_tool.sdk.emulator import ManagedEmulatorTransport, get_all_emulator_info
 from pebble_tool.sdk.cloudpebble import CloudPebbleTransport
 from pebble_tool.util.analytics import post_event
 
@@ -81,8 +81,11 @@ class PebbleCommand(BaseCommand):
                                                                           " the CloudPebble connection. Equivalent to "
                                                                           "PEBBLE_CLOUDPEBBLE.")
         if 'emulator' in cls.valid_connections:
-            group.add_argument('--emulator', type=str, help="Launch an emulator. Equivalent to PEBBLE_EMULATOR.",
+            emu_group = group.add_argument_group()
+            emu_group.add_argument('--emulator', type=str, help="Launch an emulator. Equivalent to PEBBLE_EMULATOR.",
                                choices=pebble_platforms)
+            emu_group.add_argument('--sdk', type=str, help="SDK version to launch. Defaults to the active SDK"
+                                                       " (currently {})".format(sdk_version()))
         if 'serial' in cls.valid_connections:
             group.add_argument('--serial', type=str, help="Connected directly, given a path to a serial device.")
         return super(PebbleCommand, cls)._shared_parser() + [parser]
@@ -101,7 +104,7 @@ class PebbleCommand(BaseCommand):
         elif getattr(args, 'qemu', None):
             return self._connect_qemu(args.qemu)
         elif getattr(args, 'emulator', None):
-            return self._connect_emulator(args.emulator)
+            return self._connect_emulator(args.emulator, args.sdk)
         elif getattr(args, 'cloudpebble', None):
             return self._connect_cloudpebble()
         elif getattr(args, 'serial', None):
@@ -123,11 +126,12 @@ class PebbleCommand(BaseCommand):
                 return self._connect_serial(os.environ['PEBBLE_BT_SERIAL'])
             elif 'emulator' in self.valid_connections:
                 running = []
-                for platform in pebble_platforms:
-                    if ManagedEmulatorTransport.is_platform_alive(platform):
-                        running.append(platform)
+                for platform in get_all_emulator_info():
+                    for sdk in platform:
+                        if ManagedEmulatorTransport.is_emulator_alive(platform, sdk):
+                            running.append((platform, sdk))
                 if len(running) == 1:
-                    return self._connect_emulator(running[0])
+                    return self._connect_emulator(*running)
                 elif len(running) > 1:
                     raise ToolError("Multiple emulators are running; you must specify which to use.")
         raise ToolError("No pebble connection specified.")
@@ -158,8 +162,8 @@ class PebbleCommand(BaseCommand):
         connection.run_async()
         return connection
 
-    def _connect_emulator(self, platform):
-        connection = PebbleConnection(ManagedEmulatorTransport(platform), **self._get_debug_args())
+    def _connect_emulator(self, platform, sdk):
+        connection = PebbleConnection(ManagedEmulatorTransport(platform, sdk), **self._get_debug_args())
         connection.connect()
         connection.run_async()
         # Make sure the timezone is set usefully.

@@ -2,6 +2,7 @@ from __future__ import absolute_import
 __author__ = 'katharine'
 
 from six.moves import range
+from six import iteritems
 
 import bz2
 import errno
@@ -28,20 +29,67 @@ from . import sdk_path, get_sdk_persist_dir, sdk_manager
 logger = logging.getLogger("pebble_tool.sdk.emulator")
 black_hole = open(os.devnull, 'w')
 
-def get_emulator_info_path(platform):
-    return os.path.join(tempfile.gettempdir(), 'pb-{}.json'.format(platform))
 
-def get_emulator_info(platform):
+def get_emulator_info_path():
+    return os.path.join(tempfile.gettempdir(), 'pb-emulator.json')
+
+
+def get_all_emulator_info():
     try:
-        with open(get_emulator_info_path(platform)) as f:
+        with open(get_emulator_info_path()) as f:
             return json.load(f)
     except (OSError, IOError):
+        return {}
+
+
+def get_emulator_info(platform, version=None):
+    info = get_all_emulator_info().get(platform, None)
+
+    # If we have nothing for the platform, it's None
+    if info is None:
         return None
+
+    # If a specific version was requested, return that directly.
+    if version is not None:
+        return info.get(version, None)
+
+    # If a version wasn't requested, look for one that's alive.
+    # If exactly one is alive, return that.
+    alive = []
+    for sdk_version, sdk_info in iteritems(info):
+        if ManagedEmulatorTransport.is_emulator_alive(platform, sdk_version):
+            alive.append(sdk_version)
+        else:
+            # Clean up dead entries that are left hanging around.
+            update_emulator_info(platform, sdk_version, None)
+    if len(alive) > 1:
+        raise ToolError("There are multiple {} emulators (versions {}) running. You must specify a version."
+                        .format(platform, ', '.join(alive)))
+    elif len(alive) == 0:
+        return None
+    else:
+        return info[alive[0]]
+
+
+def update_emulator_info(platform, version, new_content):
+    try:
+        with open(get_emulator_info_path()) as f:
+            content = json.load(f)
+    except (OSError, IOError):
+        content = {}
+
+    if new_content is None:
+        del content.get(platform, {version: None})[version]
+    else:
+        content.setdefault(platform, {})[version] = new_content
+    with open(get_emulator_info_path(), 'w') as f:
+        json.dump(content, f, indent=4)
 
 
 class ManagedEmulatorTransport(WebsocketTransport):
-    def __init__(self, platform):
+    def __init__(self, platform, version=None):
         self.platform = platform
+        self.version = version
         self._find_ports()
         super(ManagedEmulatorTransport, self).__init__('ws://localhost:{}/'.format(self.pypkjs_port))
 
@@ -58,9 +106,10 @@ class ManagedEmulatorTransport(WebsocketTransport):
         super(ManagedEmulatorTransport, self).connect()
 
     def _find_ports(self):
-        info = get_emulator_info(self.platform)
+        info = get_emulator_info(self.platform, self.version)
         qemu_running = False
         if info is not None:
+            self.version = info['version']
             if self._is_pid_running(info['qemu']['pid']):
                 qemu_running = True
                 self.qemu_port = info['qemu']['port']
@@ -91,6 +140,8 @@ class ManagedEmulatorTransport(WebsocketTransport):
             self.pypkjs_port = self._choose_port()
 
     def _spawn_processes(self):
+        if self.version is None:
+            self.version = sdk_manager.get_current_sdk()
         if self.qemu_pid is None:
             logger.info("Spawning QEMU.")
             self._spawn_qemu()
@@ -115,15 +166,16 @@ class ManagedEmulatorTransport(WebsocketTransport):
             'pypkjs': {
                 'pid': self.pypkjs_pid,
                 'port': self.pypkjs_port,
-            }
+            },
+            'version': self.version,
         }
-        with open(self._pid_filename, 'w') as f:
-            json.dump(d, f, indent=4)
+        update_emulator_info(self.platform, self.version, d)
 
 
     def _spawn_qemu(self):
         qemu_bin = os.environ.get('PEBBLE_QEMU_PATH', 'qemu-pebble')
-        qemu_micro_flash = os.path.join(sdk_path(), 'pebble', self.platform, 'qemu', "qemu_micro_flash.bin")
+        qemu_micro_flash = os.path.join(sdk_manager.path_for_sdk(self.version), 'pebble', self.platform, 'qemu',
+                                        "qemu_micro_flash.bin")
         qemu_spi_flash = self._get_spi_path()
 
         for path in (qemu_micro_flash, qemu_spi_flash):
@@ -218,28 +270,29 @@ class ManagedEmulatorTransport(WebsocketTransport):
                             break
                         to_file.write(data)
 
-    def _get_spi_path(self, platform=None):
-        if platform is None:
-            platform = self.platform
+    def _get_spi_path(self):
+        platform = self.platform
 
         if sdk_manager.get_current_sdk() == 'tintin':
-            sdk_qemu_spi_flash = os.path.join(sdk_path(), 'pebble', platform, 'qemu', 'qemu_spi_flash.bin')
+            sdk_qemu_spi_flash = os.path.join(sdk_manager.path_for_sdk(self.version), 'pebble', platform, 'qemu',
+                                              'qemu_spi_flash.bin')
             return sdk_qemu_spi_flash
 
-        path = os.path.join(get_sdk_persist_dir(platform), 'qemu_spi_flash.bin')
+        path = os.path.join(get_sdk_persist_dir(platform, self.version), 'qemu_spi_flash.bin')
         if not os.path.exists(path):
             self._copy_spi_image(path)
         return path
 
     def _spawn_pypkjs(self):
         phonesim_bin = os.environ.get('PHONESIM_PATH', 'phonesim.py')
-        layout_file = os.path.join(sdk_path(), 'Pebble', self.platform, 'qemu', "layouts.json")
+        layout_file = os.path.join(sdk_manager.path_for_sdk(self.version), 'Pebble', self.platform, 'qemu',
+                                   "layouts.json")
 
         command = [
             phonesim_bin,
             "--qemu", "localhost:{}".format(self.qemu_port),
             "--port", str(self.pypkjs_port),
-            "--persist", get_sdk_persist_dir(self.platform),
+            "--persist", get_sdk_persist_dir(self.platform, self.version),
             "--layout", layout_file,
             '--debug',
         ]
@@ -265,10 +318,6 @@ class ManagedEmulatorTransport(WebsocketTransport):
         else:
             return black_hole
 
-    @property
-    def _pid_filename(self):
-        return get_emulator_info_path(self.platform)
-
     @classmethod
     def _choose_port(cls):
         sock = socket.socket()
@@ -290,8 +339,10 @@ class ManagedEmulatorTransport(WebsocketTransport):
         return True
 
     @classmethod
-    def is_platform_alive(cls, platform):
-        info = get_emulator_info(platform)
+    def is_emulator_alive(cls, platform, version=None):
+        print "alive?", platform, version
+        info = get_emulator_info(platform, version or sdk_manager.get_current_sdk())
+        print info
         if info is None:
             return False
         return cls._is_pid_running(info['pypkjs']['pid']) and cls._is_pid_running(info['pypkjs']['pid'])

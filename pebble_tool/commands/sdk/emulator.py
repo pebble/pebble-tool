@@ -21,11 +21,12 @@ class KillCommand(BaseCommand):
             s = signal.SIGKILL
         else:
             s = signal.SIGTERM
-        for platform in pebble_platforms:
-            info = emulator.get_emulator_info(platform)
-            if info is not None:
-                self._kill_if_running(info['qemu']['pid'], s)
-                self._kill_if_running(info['pypkjs']['pid'], s)
+
+        info = emulator.get_all_emulator_info()
+        for platform in info.values():
+            for version in platform.values():
+                self._kill_if_running(version['qemu']['pid'], s)
+                self._kill_if_running(version['pypkjs']['pid'], s)
 
     @classmethod
     def _kill_if_running(cls, pid, signal_number):
