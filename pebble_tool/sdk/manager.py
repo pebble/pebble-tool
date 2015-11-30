@@ -125,6 +125,9 @@ class SDKManager(object):
         path = os.path.normpath(os.path.join(self.sdk_dir, sdk_info['version']))
         if os.path.exists(path):
             raise SDKInstallError("SDK {} is already installed.".format(sdk_info['version']))
+        # For now, we ignore this field aside from bailing if it has content.
+        if len(sdk_info['requirements']) > 0:
+            raise SDKInstallError("You need to update the pebble tool before installing this SDK.")
         self._license_prompt()
         self.install_from_url(sdk_info['url'])
 
