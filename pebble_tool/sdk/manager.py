@@ -15,6 +15,7 @@ import tarfile
 
 from pebble_tool.exceptions import SDKInstallError, MissingSDK
 from pebble_tool.util import get_persist_dir
+from pebble_tool.util.config import config
 
 pebble_platforms = ('aplite', 'basalt', 'chalk')
 
@@ -47,7 +48,7 @@ class SDKManager(object):
         return {x['version'] for x in self.list_local_sdks()}
 
     def list_remote_sdks(self):
-        sdks = self.request("/v1/files/sdk-core").json()
+        sdks = self.request("/v1/files/sdk-core?channel=".format(self.get_channel())).json()
         return sdks['files']
 
     def uninstall_sdk(self, version):
@@ -168,6 +169,14 @@ https://developer.getpebble.com/legal/sdk-license
             return None
         with open(manifest_path) as f:
             return json.load(f)['version']
+
+    @classmethod
+    def set_channel(cls, channel):
+        config.set('sdk-channel', channel)
+
+    @classmethod
+    def get_channel(cls):
+        return config.get('sdk-channel', '')
 
     def make_tintin_sdk(self, path):
         dest_path = os.path.join(self.sdk_dir, 'tintin')

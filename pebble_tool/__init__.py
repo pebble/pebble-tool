@@ -15,6 +15,7 @@ from .commands.sdk import manage, analyse_size, convert, emulator
 from .exceptions import ToolError
 from .sdk import sdk_version
 from .util.analytics import wait_for_analytics, analytics_prompt
+from .util.config import config
 from .util.updates import wait_for_update_checks
 from .version import __version__, __version_info__
 
@@ -41,3 +42,4 @@ def wait_for_cleanup():
     wait_for_analytics(2)
     wait_for_update_checks(2)
     logging.info("Spent %f seconds waiting for analytics.", time.time() - now)
+    config.save()

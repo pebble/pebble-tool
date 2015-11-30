@@ -24,10 +24,10 @@ class UpdateChecker(threading.Thread):
         self.start()
 
     def run(self):
-        latest = requests.get("https://sdk.getpebble.com/v1/files/{}/latest".format(self.component))
+        latest = requests.get("https://sdk.getpebble.com/v1/files/{}/latest?channel={}"
+                              .format(self.component, sdk_manager.get_channel()))
         if not 200 <= latest.status_code < 400:
             logger.info("Update check failed: %s (%s)", latest.status_code, latest.reason)
-            atexit.register(self.callback, 'v4.0-rc1')
             return
 
         result = latest.json()
@@ -38,10 +38,12 @@ class UpdateChecker(threading.Thread):
 
 def _handle_sdk_update(version):
     if not version in sdk_manager.list_local_sdk_versions():
+        print()
         print("A new SDK, version {0}, is available! Run `pebble sdk install {0}` to get it.".format(version))
 
 
 def _handle_tool_update(version):
+    print()
     print("An updated pebble tool, version {}, is available.".format(version))
     if 'PEBBLE_IS_HOMEBREW' in os.environ:
         if 'rc' in version or 'beta' in version or 'dp' in version:

@@ -40,6 +40,10 @@ class SDKManager(BaseCommand):
         uninstall_parser = subparsers.add_parser("uninstall", help="Uninstalls the given SDK.")
         uninstall_parser.add_argument('version', help="Version to uninstall.")
         uninstall_parser.set_defaults(sub_func=cls.do_uninstall)
+
+        set_channel_parser = subparsers.add_parser("set-channel", help="Sets the SDK channel.")
+        set_channel_parser.add_argument('channel', help="The channel to use.")
+        set_channel_parser.set_defaults(sub_func=cls.do_set_channel)
         return parser
 
     @classmethod
@@ -60,7 +64,11 @@ class SDKManager(BaseCommand):
             print()
         else:
             print("No SDKs installed yet.")
-        print("Available SDKs:")
+        if sdk_manager.get_channel() != '':
+            channel_text = ' ({} channel)'.format(sdk_manager.get_channel())
+        else:
+            channel_text = ''
+        print("Available SDKs{}:".format(channel_text))
         try:
             for sdk in sdk_manager.list_remote_sdks():
                 if sdk['version'] in local_sdk_versions:
@@ -98,4 +106,10 @@ class SDKManager(BaseCommand):
     @classmethod
     def do_activate(cls, args):
         sdk_manager.set_current_sdk(args.version)
+        print("Set active SDK to {}.".format(sdk_manager.get_current_sdk()))
+
+    @classmethod
+    def do_set_channel(cls, args):
+        sdk_manager.set_channel(args.channel)
+        print("Set channel to {}.".format(sdk_manager.get_channel()))
 
