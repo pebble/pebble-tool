@@ -25,7 +25,7 @@ if sys.version_info < (3, 4, 0):
     requires.append('enum34==1.0.4')
 
 __version__ = None  # Overwritten by executing version.py.
-with open('libpebble2/version.py') as f:
+with open('pebble_tool/version.py') as f:
     exec(f.read())
 
 setup(name='pebble-tool',
