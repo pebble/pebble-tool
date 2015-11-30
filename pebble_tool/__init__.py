@@ -15,6 +15,7 @@ from .commands.sdk import manage, analyse_size, convert, emulator
 from .exceptions import ToolError
 from .sdk import sdk_version
 from .util.analytics import wait_for_analytics, analytics_prompt
+from .version import __version__, __version_info__
 
 
 def run_tool(args=None):
@@ -22,7 +23,7 @@ def run_tool(args=None):
     logging.basicConfig()
     analytics_prompt()
     parser = argparse.ArgumentParser(description="Pebble Tool", prog="pebble")
-    parser.add_argument("--version", action="version", version="Pebble Tool v4.0")
+    parser.add_argument("--version", action="version", version="Pebble Tool v{}".format(__version__))
     register_children(parser)
     args = parser.parse_args(args)
     if not hasattr(args, 'func'):

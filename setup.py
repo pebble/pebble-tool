@@ -24,8 +24,12 @@ requires = [
 if sys.version_info < (3, 4, 0):
     requires.append('enum34==1.0.4')
 
+__version__ = None  # Overwritten by executing version.py.
+with open('libpebble2/version.py') as f:
+    exec(f.read())
+
 setup(name='pebble-tool',
-      version='4.0',
+      version=__version__,
       description='Tool for interacting with pebbles.',
       url='https://github.com/pebble/pebble-tool',
       author='Pebble Technology Corporation',
