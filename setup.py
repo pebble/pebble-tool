@@ -32,8 +32,11 @@ setup(name='pebble-tool',
       author_email='katharine@pebble.com',
       license='MIT',
       packages=find_packages(),
+      package_data={
+          'pebble_tool.commands.sdk': ['python'],
+      },
       install_requires=requires,
       entry_points={
           'console_scripts': ['pebble=pebble_tool:run_tool'],
       },
-      zip_safe=True)
+      zip_safe=False)
