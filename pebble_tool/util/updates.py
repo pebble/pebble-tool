@@ -46,11 +46,7 @@ def _handle_tool_update(version):
     print()
     print("An updated pebble tool, version {}, is available.".format(version))
     if 'PEBBLE_IS_HOMEBREW' in os.environ:
-        if 'rc' in version or 'beta' in version or 'dp' in version:
-            devel = " --devel"
-        else:
-            devel = ""
-        print("Run `brew update && brew upgrade{} pebble-sdk` to get it.".format(devel))
+        print("Run `brew update && brew upgrade pebble-sdk` to get it.")
     else:
         print("Head to https://developer.getpebble.com/sdk/ to get it.")
 
