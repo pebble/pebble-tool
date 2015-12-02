@@ -7,6 +7,7 @@ import re
 import requests
 
 from ..base import BaseCommand
+from pebble_tool.exceptions import MissingSDK
 from pebble_tool.sdk import sdk_manager
 
 
@@ -44,6 +45,11 @@ class SDKManager(BaseCommand):
         set_channel_parser = subparsers.add_parser("set-channel", help="Sets the SDK channel.")
         set_channel_parser.add_argument('channel', help="The channel to use.")
         set_channel_parser.set_defaults(sub_func=cls.do_set_channel)
+
+        include_path_parser = subparsers.add_parser("include-path", help="Prints out the SDK include path.")
+        include_path_parser.add_argument("platform", help="The platform to give includes for.")
+        include_path_parser.add_argument("--sdk", help="Optional SDK version override.")
+        include_path_parser.set_defaults(sub_func=cls.do_include_path)
         return parser
 
     @classmethod
@@ -113,3 +119,11 @@ class SDKManager(BaseCommand):
         sdk_manager.set_channel(args.channel)
         print("Set channel to {}.".format(sdk_manager.get_channel()))
 
+    @classmethod
+    def do_include_path(cls, args):
+        sdk = args.sdk or sdk_manager.get_current_sdk()
+        path = sdk_manager.path_for_sdk(sdk)
+        path = os.path.join(path, "pebble", args.platform, "include")
+        if not os.path.exists(path):
+            raise MissingSDK("No platform '{}' available for SDK {}".format(args.platform, sdk))
+        print(path)
