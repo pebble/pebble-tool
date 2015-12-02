@@ -52,7 +52,7 @@ def build(ctx):
             binaries.append({'platform': p, 'app_elf': app_elf})
 
     ctx.set_group('bundle')
-    ctx.pbl_bundle(binaries=binaries, js=ctx.path.ant_glob('src/js/**/*.js'))
+    ctx.pbl_bundle(binaries=binaries, js=ctx.path.ant_glob('src/**/*.js'), js_entry_file='src/js/app.js')
 """
 
 FILE_WSCRIPT_LEGACY2 = """
@@ -171,6 +171,7 @@ DICT_DUMMY_APPINFO = {
     'version_label': '1.0',
     'target_platform': '["aplite", "basalt", "chalk"]',
     'sdk_version': SDK_VERSION,
+    'enable_multi_js': 'true',
     'is_watchface': 'false',
     'app_keys': """{
     "dummy": 0
@@ -186,6 +187,7 @@ FILE_DUMMY_APPINFO = string.Template("""{
   "versionLabel": "${version_label}",
   "sdkVersion": "${sdk_version}",
   "targetPlatforms": ${target_platform},
+  "enableMultiJS": ${enable_multi_js},
   "watchapp": {
     "watchface": ${is_watchface}
   },

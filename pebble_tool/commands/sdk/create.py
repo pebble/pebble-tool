@@ -55,7 +55,7 @@ class NewProjectCommand(BaseCommand):
             project_js_src = os.path.join(project_src, "js")
             os.makedirs(project_js_src)
 
-            with open(os.path.join(project_js_src, "pebble-js-app.js"), "w") as f:
+            with open(os.path.join(project_js_src, "app.js"), "w") as f:
                 f.write(FILE_DUMMY_JAVASCRIPT_SRC)
 
         # Add background worker files if applicable
