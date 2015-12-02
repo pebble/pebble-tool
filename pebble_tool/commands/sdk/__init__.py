@@ -19,13 +19,13 @@ class SDKCommand(BaseCommand):
     def get_sdk_path(self):
         path = sdk_manager.path_for_sdk(self.sdk) if self.sdk is not None else sdk_path()
         logger.debug("SDK path: %s", path)
-        if not os.path.exists(os.path.join(path, 'Pebble', 'waf')):
+        if not os.path.exists(os.path.join(path, 'pebble', 'waf')):
             raise MissingSDK("SDK unavailable; can't run this command.")
         return path
 
     @property
     def waf_path(self):
-        return os.path.join(self.get_sdk_path(), 'Pebble', 'waf')
+        return os.path.join(self.get_sdk_path(), 'pebble', 'waf')
 
     @classmethod
     def add_parser(cls, parser):

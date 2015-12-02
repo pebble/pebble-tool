@@ -18,7 +18,7 @@ class AnalyseSizeCommand(SDKCommand):
     def __call__(self, args):
         BaseCommand.__call__(self, args)
         self.add_arm_tools_to_path()
-        sys.path.append(os.path.join(sdk_path(), 'Pebble', 'common', 'tools'))
+        sys.path.append(os.path.join(sdk_path(), 'pebble', 'common', 'tools'))
 
         paths = []
         if args.elf_path is None:
