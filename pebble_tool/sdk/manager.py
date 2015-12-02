@@ -48,7 +48,7 @@ class SDKManager(object):
         return {x['version'] for x in self.list_local_sdks()}
 
     def list_remote_sdks(self):
-        sdks = self.request("/v1/files/sdk-core?channel=".format(self.get_channel())).json()
+        sdks = self.request("/v1/files/sdk-core?channel={}".format(self.get_channel())).json()
         return sdks['files']
 
     def uninstall_sdk(self, version):
@@ -121,7 +121,7 @@ class SDKManager(object):
             raise
 
     def install_remote_sdk(self, version):
-        sdk_info = self.request("/v1/files/sdk-core/{}".format(version)).json()
+        sdk_info = self.request("/v1/files/sdk-core/{}?channel={}".format(version, self.get_channel())).json()
         if 'version' not in sdk_info:
             raise SDKInstallError("SDK {} could not be downloaded.".format(version))
         path = os.path.normpath(os.path.join(self.sdk_dir, sdk_info['version']))
