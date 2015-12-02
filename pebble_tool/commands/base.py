@@ -167,7 +167,7 @@ class PebbleCommand(BaseCommand):
         connection.connect()
         connection.run_async()
         # Make sure the timezone is set usefully.
-        if platform != "aplite":
+        if connection.firmware_version.major >= 3:
             ts = time.time()
             tz_offset = -time.altzone if time.localtime(ts).tm_isdst and time.daylight else -time.altzone
             tz_offset_minutes = tz_offset // 60
