@@ -3,8 +3,10 @@ __author__ = 'katharine'
 
 import atexit
 import logging
+import math
 import os
 import requests
+import sys
 import threading
 import time
 
@@ -51,6 +53,11 @@ def _handle_tool_update(version):
         print("Head to https://developer.getpebble.com/sdk/ to get it.")
 
 
+def _get_platform():
+    sys_platform = sys.platform.rstrip('2')  # "linux2" on python < 3.3...
+    return sys_platform + str(int(round(math.log(sys.maxint, 2)+1)))
+
+
 def wait_for_update_checks(timeout):
     now = time.time()
     end = now + timeout
@@ -60,7 +67,7 @@ def wait_for_update_checks(timeout):
             break
         checker.join(end - time.time())
 
-_checkers = [UpdateChecker("pebble-tool", __version__, _handle_tool_update)]
+_checkers = [UpdateChecker("pebble-tool-{}".format(_get_platform()), __version__, _handle_tool_update)]
 
 # Only do the SDK update check if there is actually an SDK installed.
 if sdk_manager.get_current_sdk() is not None:
