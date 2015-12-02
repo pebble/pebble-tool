@@ -50,7 +50,7 @@ def _handle_tool_update(version):
     if 'PEBBLE_IS_HOMEBREW' in os.environ:
         print("Run `brew update && brew upgrade pebble-sdk` to get it.")
     else:
-        print("Head to https://developer.getpebble.com/sdk/ to get it.")
+        print("Head to https://developer.getpebble.com/sdk/beta/ to get it.")
 
 
 def _get_platform():
