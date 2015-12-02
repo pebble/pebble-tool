@@ -60,9 +60,14 @@ class SDKCommand(BaseCommand):
         if self._verbosity > 0:
             v = '-' + ('v' * self._verbosity)
             args = [v] + args
-        command = [os.path.join(self.get_sdk_path(), '..', '.env', 'bin', 'python'), self.waf_path, command] + args
+        virtualenv = os.path.join(self.get_sdk_path(), '..', '.env')
+        command = [os.path.join(virtualenv, 'bin', 'python'), self.waf_path, command] + args
         logger.debug("waf command: %s", subprocess.list2cmdline(command))
-        subprocess.check_call(command)
+        subprocess.check_call(command, env={
+            'PYTHONHOME': virtualenv,
+            'PATH': os.environ['PATH'],
+            'TERM': os.environ['TERM'],
+        })
 
     def __call__(self, args):
         super(SDKCommand, self).__call__(args)

@@ -15,6 +15,7 @@ import shutil
 import signal
 import socket
 import subprocess
+import sys
 import tempfile
 import time
 
@@ -289,6 +290,7 @@ class ManagedEmulatorTransport(WebsocketTransport):
                                    "layouts.json")
 
         command = [
+            sys.executable,
             phonesim_bin,
             "--qemu", "localhost:{}".format(self.qemu_port),
             "--port", str(self.pypkjs_port),

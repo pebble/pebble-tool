@@ -106,7 +106,8 @@ class SDKManager(object):
             subprocess.check_call([sys.executable, "-m", "virtualenv", virtualenv_path, "--no-site-packages"])
             print("Installing dependencies...")
             subprocess.check_call([os.path.join(virtualenv_path, "bin", "python"), "-m", "pip", "install", "-r",
-                                   os.path.join(path, "sdk-core", "requirements.txt")])
+                                   os.path.join(path, "sdk-core", "requirements.txt")],
+                                  env={'PYTHONHOME': virtualenv_path})
             self.set_current_sdk(sdk_info['version'])
             print("Done.")
         except Exception:
