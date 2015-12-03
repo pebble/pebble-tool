@@ -63,7 +63,7 @@ class SDKManager(BaseCommand):
             for sdk in sorted_local_sdks:
                 line = sdk['version']
                 if sdk['channel']:
-                    line += " ({})".format(', '.join(sdk['channel']))
+                    line += " ({})".format(sdk['channel'])
                 if sdk['version'] == current_sdk:
                     line += " (active)"
                 print(line)
