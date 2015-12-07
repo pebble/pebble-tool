@@ -63,11 +63,11 @@ class SDKCommand(BaseCommand):
         virtualenv = os.path.join(self.get_sdk_path(), '..', '.env')
         command = [os.path.join(virtualenv, 'bin', 'python'), self.waf_path, command] + args
         logger.debug("waf command: %s", subprocess.list2cmdline(command))
-        subprocess.check_call(command, env={
-            'PYTHONHOME': virtualenv,
-            'PATH': os.environ['PATH'],
-            'TERM': os.environ['TERM'],
-        })
+
+        new_env = os.environ.copy()
+        new_env['PYTHONHOME'] = virtualenv
+
+        subprocess.check_call(command, env=new_env)
 
     def __call__(self, args):
         super(SDKCommand, self).__call__(args)
