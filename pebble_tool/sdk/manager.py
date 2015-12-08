@@ -23,6 +23,7 @@ pebble_platforms = ('aplite', 'basalt', 'chalk')
 
 class SDKManager(object):
     DOWNLOAD_SERVER = "https://sdk.getpebble.com"
+
     def __init__(self, sdk_dir=None):
         self.sdk_dir = os.path.normpath(sdk_dir or os.path.join(get_persist_dir(), "SDKs"))
         if not os.path.exists(self.sdk_dir):
