@@ -31,8 +31,8 @@ def sdk_version():
     return sdk_manager.get_current_sdk()
 
 
-def get_sdk_persist_dir(platform, sdk_version=None):
-    dir = os.path.join(get_persist_dir(), sdk_version or sdk_version(), platform)
+def get_sdk_persist_dir(platform, for_sdk_version=None):
+    dir = os.path.join(get_persist_dir(), for_sdk_version or sdk_version(), platform)
     if not os.path.exists(dir):
         os.makedirs(dir)
     return dir
