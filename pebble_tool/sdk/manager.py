@@ -194,8 +194,6 @@ https://developer.getpebble.com/legal/sdk-license
         sdk_path = os.path.join(build_path, 'sdk')
         os.mkdir(dest_path)
         env_path = os.path.join(dest_path, '.env')
-        if os.path.isdir(os.path.join(path, '.env')):
-            os.symlink(os.path.join(path, '.env'), env_path)
         dest_path = os.path.join(dest_path, 'sdk-core')
         os.mkdir(os.path.join(dest_path))
         pebble_path = os.path.join(dest_path, 'pebble')
@@ -228,19 +226,19 @@ subprocess.call([sys.executable, {}] + sys.argv[1:])
                 'channel': '',
             }, f)
 
-        if not os.path.exists(env_path):
-            print("Couldn't find a virtualenv to reuse at {}; making one.".format(os.path.join(path, '.env')))
-            print("Preparing virtualenv... (this may take a while)")
-            subprocess.check_call([sys.executable, "-m", "virtualenv", env_path, "--no-site-packages"])
-            print("Installing dependencies...")
-            if sys.platform.startswith('darwin'):
-                platform = 'osx'
-            elif sys.platform.startswith('linux'):
-                platform = 'linux'
-            else:
-                raise SDKInstallError("Couldn't figure out what requirements to install.")
-            subprocess.check_call([os.path.join(env_path, "bin", "python"), "-m", "pip", "install", "-r",
-                                   os.path.join(path, "requirements-{}.txt".format(platform))])
+        print("Preparing virtualenv... (this may take a while)")
+        subprocess.check_call([sys.executable, "-m", "virtualenv", env_path, "--no-site-packages"])
+        print("Installing dependencies...")
+        print("This may fail installing Pillow==2.0.0. In that case, question why we still force 2.0.0 anyway.")
+        if sys.platform.startswith('darwin'):
+            platform = 'osx'
+        elif sys.platform.startswith('linux'):
+            platform = 'linux'
+        else:
+            raise SDKInstallError("Couldn't figure out what requirements to install.")
+        subprocess.check_call([os.path.join(env_path, "bin", "python"), "-m", "pip", "install", "-r",
+                               os.path.join(path, "requirements-{}.txt".format(platform))],
+                              env={'PYTHONHOME': env_path, 'PATH': os.environ['PATH']})
 
         self.set_current_sdk('tintin')
         print("Generated an SDK linked to {}.".format(path))
