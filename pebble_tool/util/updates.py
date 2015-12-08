@@ -12,6 +12,7 @@ import time
 
 from pebble_tool.version import __version__
 from pebble_tool.sdk import sdk_manager
+from pebble_tool.util.config import config
 
 logger = logging.getLogger("pebble_tool.util.updates")
 
@@ -26,16 +27,29 @@ class UpdateChecker(threading.Thread):
         self.start()
 
     def run(self):
-        latest = requests.get("https://sdk.getpebble.com/v1/files/{}/latest?channel={}"
-                              .format(self.component, sdk_manager.get_channel()))
-        if not 200 <= latest.status_code < 400:
-            logger.info("Update check failed: %s (%s)", latest.status_code, latest.reason)
-            return
+        last_check = config.get('update-checks', {}).get(self.component, {})
+        if last_check.get('timestamp', 0) < time.time() - 86400:  # minus one day
+            logger.debug("Haven't looked for updates lately; checking...")
+            latest = sdk_manager.request("/v1/files/{}/latest?channel={}"
+                                  .format(self.component, sdk_manager.get_channel()))
+            if not 200 <= latest.status_code < 400:
+                logger.info("Update check failed: %s (%s)", latest.status_code, latest.reason)
+                return
 
-        result = latest.json()
-        if result['version'] != self.current_version:
-            logger.debug("Found an update: %s", result['version'])
-            atexit.register(self.callback, result['version'])
+            result = latest.json()
+            with config.lock:
+                config.setdefault('update-checks', {})[self.component] = {
+                    'timestamp': time.time(),
+                    'version': result['version'],
+                }
+            self._check_version(result['version'])
+        else:
+            self._check_version(last_check['version'])
+
+    def _check_version(self, new_version):
+        if new_version != self.current_version:
+            logger.debug("Found an update: %s", new_version)
+            atexit.register(self.callback, new_version)
 
 
 def _handle_sdk_update(version):
@@ -67,8 +81,13 @@ def wait_for_update_checks(timeout):
             break
         checker.join(end - time.time())
 
-_checkers = [UpdateChecker("pebble-tool-{}".format(_get_platform()), __version__, _handle_tool_update)]
+_checkers = []
 
-# Only do the SDK update check if there is actually an SDK installed.
-if sdk_manager.get_current_sdk() is not None:
-    _checkers.append(UpdateChecker("sdk-core", "", _handle_sdk_update))
+
+def _do_updates():
+    _checkers.append(UpdateChecker("pebble-tool-{}".format(_get_platform()), __version__, _handle_tool_update))
+    # Only do the SDK update check if there is actually an SDK installed.
+    if sdk_manager.get_current_sdk() is not None:
+        _checkers.append(UpdateChecker("sdk-core", "", _handle_sdk_update))
+
+_do_updates()
