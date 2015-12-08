@@ -3,6 +3,7 @@ __author__ = 'katharine'
 
 from contextlib import closing
 from distutils.util import strtobool
+import errno
 import json
 import os
 from progressbar import ProgressBar, Percentage, Bar, FileTransferSpeed, Timer
@@ -29,18 +30,23 @@ class SDKManager(object):
 
     def list_local_sdks(self):
         sdks = []
-        for dir in os.listdir(self.sdk_dir):
-            dir = os.path.join(self.sdk_dir, dir)
-            if os.path.islink(dir):
-                continue
-            manifest_path = os.path.join(dir, 'sdk-core', 'manifest.json')
-            if not os.path.exists(manifest_path):
-                continue
-            with open(manifest_path) as f:
-                try:
-                    sdks.append(json.load(f))
-                except ValueError:
-                    pass
+        try:
+            for dir in os.listdir(self.sdk_dir):
+                dir = os.path.join(self.sdk_dir, dir)
+                if os.path.islink(dir):
+                    continue
+                manifest_path = os.path.join(dir, 'sdk-core', 'manifest.json')
+                if not os.path.exists(manifest_path):
+                    continue
+                with open(manifest_path) as f:
+                    try:
+                        sdks.append(json.load(f))
+                    except ValueError:
+                        pass
+        except OSError as e:
+            if e.errno != errno.ENOENT:
+                raise
+            return []
 
         return sdks
 
