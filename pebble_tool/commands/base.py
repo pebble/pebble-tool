@@ -32,10 +32,15 @@ class SelfRegisteringCommand(type):
 
 class BaseCommand(with_metaclass(SelfRegisteringCommand)):
     command = None
+    has_subcommands = False
 
     @classmethod
     def add_parser(cls, parser):
-        parser = parser.add_parser(cls.command, parents=cls._shared_parser(), help=cls.__doc__)
+        if cls.has_subcommands:
+            epilog = "For help on an individual subcommand, call that command with --help."
+        else:
+            epilog = None
+        parser = parser.add_parser(cls.command, parents=cls._shared_parser(), help=cls.__doc__, epilog=epilog)
         parser.set_defaults(func=lambda x: cls()(x))
         return parser
 
@@ -197,6 +202,6 @@ class PebbleCommand(BaseCommand):
 
 
 def register_children(parser):
-    subparsers = parser.add_subparsers(title="Command")
+    subparsers = parser.add_subparsers(title="command")
     for command in _CommandRegistry:
         command.add_parser(subparsers)

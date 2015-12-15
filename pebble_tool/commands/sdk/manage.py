@@ -15,6 +15,7 @@ from pebble_tool.util.versions import version_to_key
 class SDKManager(BaseCommand):
     """Manages available SDKs"""
     command = 'sdk'
+    has_subcommands = True
 
     def __call__(self, args):
         super(SDKManager, self).__call__(args)
@@ -24,7 +25,7 @@ class SDKManager(BaseCommand):
     @classmethod
     def add_parser(cls, parser):
         parser = super(SDKManager, cls).add_parser(parser)
-        subparsers = parser.add_subparsers()
+        subparsers = parser.add_subparsers(title="subcommand")
 
         list_parser = subparsers.add_parser("list", help="Lists available SDKs.")
         list_parser.set_defaults(sub_func=cls.do_list)

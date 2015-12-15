@@ -24,7 +24,8 @@ def run_tool(args=None):
     urllib3.disable_warnings()  # sigh. :(
     logging.basicConfig()
     analytics_prompt()
-    parser = argparse.ArgumentParser(description="Pebble Tool", prog="pebble")
+    parser = argparse.ArgumentParser(description="Pebble Tool", prog="pebble",
+                                     epilog="For help on an individual command, call that command with --help.")
     version_string = "Pebble Tool v{}".format(__version__)
     if sdk_version() is not None:
         version_string += " (active SDK: v{})".format(sdk_version())
