@@ -19,12 +19,16 @@ from .util.config import config
 from .util.updates import wait_for_update_checks
 from .version import __version__, __version_info__
 
+
 def run_tool(args=None):
     urllib3.disable_warnings()  # sigh. :(
     logging.basicConfig()
     analytics_prompt()
     parser = argparse.ArgumentParser(description="Pebble Tool", prog="pebble")
-    parser.add_argument("--version", action="version", version="Pebble Tool v{}".format(__version__))
+    version_string = "Pebble Tool v{}".format(__version__)
+    if sdk_version() is not None:
+        version_string += " (active SDK: v{})".format(sdk_version())
+    parser.add_argument("--version", action="version", version=version_string)
     register_children(parser)
     args = parser.parse_args(args)
     if not hasattr(args, 'func'):
@@ -34,6 +38,7 @@ def run_tool(args=None):
     except ToolError as e:
         parser.exit(message=str(e)+"\n", status=1)
         sys.exit(1)
+
 
 @atexit.register
 def wait_for_cleanup():
