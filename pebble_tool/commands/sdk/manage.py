@@ -9,6 +9,7 @@ import requests
 from ..base import BaseCommand
 from pebble_tool.exceptions import MissingSDK
 from pebble_tool.sdk import sdk_manager
+from pebble_tool.util.versions import version_to_key
 
 
 class SDKManager(BaseCommand):
@@ -57,7 +58,7 @@ class SDKManager(BaseCommand):
         current_sdk = sdk_manager.get_current_sdk()
         local_sdks = sdk_manager.list_local_sdks()
         local_sdk_versions = sdk_manager.list_local_sdk_versions()
-        sorted_local_sdks = sorted(local_sdks, key=lambda x: x['version'], reverse=True)
+        sorted_local_sdks = sorted(local_sdks, key=lambda x: version_to_key(x['version']), reverse=True)
         if len(local_sdks) > 0:
             print("Installed SDKs:")
             for sdk in sorted_local_sdks:

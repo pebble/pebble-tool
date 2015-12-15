@@ -17,6 +17,7 @@ import tarfile
 from pebble_tool.exceptions import SDKInstallError, MissingSDK
 from pebble_tool.util import get_persist_dir
 from pebble_tool.util.config import config
+from pebble_tool.util.versions import version_to_key
 
 pebble_platforms = ('aplite', 'basalt', 'chalk')
 
@@ -62,8 +63,7 @@ class SDKManager(object):
         current_sdk = self.get_current_sdk()
         shutil.rmtree(self.root_path_for_sdk(version))
         if current_sdk == version:
-            # TODO: This is going to make odd choices if we get past x.9.
-            current_sdks = sorted(self.list_local_sdk_versions(), reverse=True)
+            current_sdks = sorted(self.list_local_sdk_versions(), reverse=True, key=version_to_key)
             if len(current_sdks) > 0:
                 self.set_current_sdk(current_sdks[0])
             else:

@@ -5,7 +5,6 @@ import atexit
 import logging
 import math
 import os
-import requests
 import sys
 import threading
 import time
@@ -13,6 +12,7 @@ import time
 from pebble_tool.version import __version__
 from pebble_tool.sdk import sdk_manager
 from pebble_tool.util.config import config
+from pebble_tool.util.versions import version_to_key
 
 logger = logging.getLogger("pebble_tool.util.updates")
 
@@ -47,15 +47,14 @@ class UpdateChecker(threading.Thread):
             self._check_version(last_check['version'])
 
     def _check_version(self, new_version):
-        if new_version != self.current_version:
+        if version_to_key(new_version) > version_to_key(self.current_version):
             logger.debug("Found an update: %s", new_version)
             atexit.register(self.callback, new_version)
 
 
 def _handle_sdk_update(version):
-    if not version in sdk_manager.list_local_sdk_versions():
-        print()
-        print("A new SDK, version {0}, is available! Run `pebble sdk install {0}` to get it.".format(version))
+    print()
+    print("A new SDK, version {0}, is available! Run `pebble sdk install {0}` to get it.".format(version))
 
 
 def _handle_tool_update(version):
@@ -88,6 +87,10 @@ def _do_updates():
     _checkers.append(UpdateChecker("pebble-tool-{}".format(_get_platform()), __version__, _handle_tool_update))
     # Only do the SDK update check if there is actually an SDK installed.
     if sdk_manager.get_current_sdk() is not None:
-        _checkers.append(UpdateChecker("sdk-core", "", _handle_sdk_update))
+        try:
+            latest_sdk = max(sdk_manager.list_local_sdk_versions(), key=version_to_key)
+        except ValueError:
+            latest_sdk = "0"
+        _checkers.append(UpdateChecker("sdk-core", latest_sdk, _handle_sdk_update))
 
 _do_updates()
