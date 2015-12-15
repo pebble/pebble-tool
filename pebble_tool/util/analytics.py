@@ -20,6 +20,7 @@ from pebble_tool.account import get_default_account
 from pebble_tool.sdk.project import PebbleProject
 from pebble_tool.exceptions import MissingSDK, PebbleProjectException
 from pebble_tool.sdk import sdk_path, sdk_version, get_persist_dir
+from pebble_tool.version import __version__
 
 logger = logging.getLogger("pebble_tool.util.analytics")
 
@@ -87,7 +88,8 @@ class PebbleAnalytics(threading.Thread):
             'platform': 'native_sdk',
             'sdk': {
                 'host': self._get_host_info(),
-                'version': sdk_version()
+                'version': sdk_version(),
+                'tool_version': __version__,
             },
             'data': data.copy()
         }
