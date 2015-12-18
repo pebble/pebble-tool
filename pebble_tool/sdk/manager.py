@@ -24,6 +24,7 @@ pebble_platforms = ('aplite', 'basalt', 'chalk')
 
 class SDKManager(object):
     DOWNLOAD_SERVER = "https://sdk.getpebble.com"
+    LICENSE_ACCEPT_FILE = os.path.join(get_persist_dir(), 'ACCEPT_LICENSE')
 
     def __init__(self, sdk_dir=None):
         self.sdk_dir = os.path.normpath(sdk_dir or os.path.join(get_persist_dir(), "SDKs"))
@@ -138,7 +139,14 @@ class SDKManager(object):
         # For now, we ignore this field aside from bailing if it has content.
         if len(sdk_info['requirements']) > 0:
             raise SDKInstallError("You need to update the pebble tool before installing this SDK.")
-        self._license_prompt()
+
+        # check if license is accepted by file
+        if os.path.isfile(self.LICENSE_ACCEPT_FILE):
+            print("Note: \"PEBBLE TERMS OF USE\" and \"PEBBLE DEVELOPER LICENSE\" accepted by file")
+            print("      " + self.LICENSE_ACCEPT_FILE + "\n")
+        else:
+            self._license_prompt()
+
         self.install_from_url(sdk_info['url'])
 
     def _license_prompt(self):
