@@ -179,7 +179,7 @@ class PebbleCommand(BaseCommand):
         # Make sure the timezone is set usefully.
         if connection.firmware_version.major >= 3:
             ts = time.time()
-            tz_offset = -time.altzone if time.localtime(ts).tm_isdst and time.daylight else -time.altzone
+            tz_offset = -time.altzone if time.localtime(ts).tm_isdst and time.daylight else -time.timezone
             tz_offset_minutes = tz_offset // 60
             tz_name = "UTC%+d" % (tz_offset_minutes / 60)
             connection.send_packet(TimeMessage(message=SetUTC(unix_time=ts, utc_offset=tz_offset_minutes, tz_name=tz_name)))
