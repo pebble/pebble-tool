@@ -119,26 +119,31 @@ class PebbleCommand(BaseCommand):
                 return self._connect_phone(os.environ['PEBBLE_PHONE'])
             elif 'qemu' in self.valid_connections and 'PEBBLE_QEMU' in os.environ:
                 return self._connect_qemu(os.environ['PEBBLE_QEMU'])
-            elif 'emulator' in self.valid_connections and 'PEBBLE_EMULATOR' in os.environ:
-                platform = os.environ['PEBBLE_EMULATOR']
-                if platform not in pebble_platforms:
-                    raise ToolError("PEBBLE_EMULATOR is set to '{}', which is not a valid platform "
-                                    "(pick from {})".format(platform, ', '.join(pebble_platforms)))
-                return self._connect_emulator(platform)
             elif 'cloudpebble' in self.valid_connections and os.environ.get('PEBBLE_CLOUDPEBBLE', False):
                 return self._connect_cloudpebble()
             elif 'serial' in self.valid_connections and 'PEBBLE_BT_SERIAL' in os.environ:
                 return self._connect_serial(os.environ['PEBBLE_BT_SERIAL'])
             elif 'emulator' in self.valid_connections:
                 running = []
-                for platform in get_all_emulator_info():
-                    for sdk in platform:
-                        if ManagedEmulatorTransport.is_emulator_alive(platform, sdk):
-                            running.append((platform, sdk))
-                if len(running) == 1:
-                    return self._connect_emulator(*running)
-                elif len(running) > 1:
-                    raise ToolError("Multiple emulators are running; you must specify which to use.")
+                emulator_platform = None
+                emulator_sdk = None
+                if 'PEBBLE_EMULATOR' in os.environ:
+                    emulator_platform = os.environ['PEBBLE_EMULATOR']
+                    if emulator_platform not in pebble_platforms:
+                        raise ToolError("PEBBLE_EMULATOR is set to '{}', which is not a valid platform "
+                                        "(pick from {})".format(emulator_platform, ', '.join(pebble_platforms)))
+                    emulator_sdk = os.environ.get('PEBBLE_EMULATOR_VERSION', sdk_version())
+                else:
+                    for platform, sdks in get_all_emulator_info().items():
+                        for sdk in sdks:
+                            if ManagedEmulatorTransport.is_emulator_alive(platform, sdk):
+                                running.append((platform, sdk))
+                    if len(running) == 1:
+                        emulator_platform, emulator_sdk = running[0]
+                    elif len(running) > 1:
+                        raise ToolError("Multiple emulators are running; you must specify which to use.")
+                if emulator_platform is not None:
+                    return self._connect_emulator(emulator_platform, emulator_sdk)
         raise ToolError("No pebble connection specified.")
 
     def _connect_phone(self, phone):
