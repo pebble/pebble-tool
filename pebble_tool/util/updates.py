@@ -41,28 +41,33 @@ class UpdateChecker(threading.Thread):
                 config.setdefault('update-checks', {})[self.component] = {
                     'timestamp': time.time(),
                     'version': result['version'],
+                    'release_notes': result.get('release_notes', None)
                 }
-            self._check_version(result['version'])
+            self._check_version(result['version'], result.get('release_notes', None))
         else:
-            self._check_version(last_check['version'])
+            self._check_version(last_check['version'], last_check.get('release_notes', None))
 
-    def _check_version(self, new_version):
+    def _check_version(self, new_version, release_notes=None):
         if version_to_key(new_version) > version_to_key(self.current_version):
             logger.debug("Found an update: %s", new_version)
-            atexit.register(self.callback, new_version)
+            atexit.register(self.callback, new_version, release_notes)
 
 
-def _handle_sdk_update(version):
+def _handle_sdk_update(version, release_notes=None):
     # We know the SDK was new when the version check occurred, but it is possible that it's
     # been installed since then. Therefore, check again.
     if version not in sdk_manager.list_local_sdk_versions():
         print()
         print("A new SDK, version {0}, is available! Run `pebble sdk install {0}` to get it.".format(version))
+        if release_notes is not None:
+            print(release_notes)
 
 
-def _handle_tool_update(version):
+def _handle_tool_update(version, release_notes=None):
     print()
     print("An updated pebble tool, version {}, is available.".format(version))
+    if release_notes is not None:
+        print(release_notes)
     if 'PEBBLE_IS_HOMEBREW' in os.environ:
         print("Run `brew update && brew upgrade pebble-sdk` to get it.")
     else:
