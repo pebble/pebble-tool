@@ -53,8 +53,11 @@ class UpdateChecker(threading.Thread):
 
 
 def _handle_sdk_update(version):
-    print()
-    print("A new SDK, version {0}, is available! Run `pebble sdk install {0}` to get it.".format(version))
+    # We know the SDK was new when the version check occurred, but it is possible that it's
+    # been installed since then. Therefore, check again.
+    if version not in sdk_manager.list_local_sdk_versions():
+        print()
+        print("A new SDK, version {0}, is available! Run `pebble sdk install {0}` to get it.".format(version))
 
 
 def _handle_tool_update(version):
