@@ -42,7 +42,8 @@ class SDKManager(BaseCommand):
         activate_parser.set_defaults(sub_func=cls.do_activate)
 
         uninstall_parser = subparsers.add_parser("uninstall", help="Uninstalls the given SDK.")
-        uninstall_parser.add_argument('--keep-emu', action="store_true", help="Skip deleting emulator data such as persistent data.")
+        uninstall_parser.add_argument('--keep-data', action="store_true", help="Skip deleting SDK-specific data "
+                                                                               "such as persistent storage.")
         uninstall_parser.add_argument('version', help="Version to uninstall.")
         uninstall_parser.set_defaults(sub_func=cls.do_uninstall)
 
@@ -111,8 +112,7 @@ class SDKManager(BaseCommand):
     def do_uninstall(cls, args):
         print("Uninstalling SDK {}...".format(args.version))
         sdk_manager.uninstall_sdk(args.version)
-        if not args.keep_emu:
-            print("Deleting emulator files.")
+        if not args.keep_data:
             for platform in pebble_platforms:
                 shutil.rmtree(os.path.join(get_sdk_persist_dir(platform, args.version)))
         print("Done.")
