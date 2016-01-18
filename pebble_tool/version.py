@@ -8,7 +8,7 @@ else:
 
 __version__ = '{}.{}'.format(*version_base)
 if version_base[2] != 0:
-    __version__ += '.{}'.format(version_base[3])
+    __version__ += '.{}'.format(version_base[2])
 
 if version_suffix is not None:
     __version__ += '-{}'.format(version_suffix)
