@@ -8,10 +8,10 @@ import time
 
 from pebble_tool.exceptions import BuildError
 from pebble_tool.util.analytics import post_event
-from . import SDKCommand
+from pebble_tool.commands.sdk.project import SDKProjectCommand
 
 
-class BuildCommand(SDKCommand):
+class BuildCommand(SDKProjectCommand):
     """Builds the current project."""
     command = "build"
 
@@ -68,7 +68,7 @@ class BuildCommand(SDKCommand):
         return parser
 
 
-class CleanCommand(SDKCommand):
+class CleanCommand(SDKProjectCommand):
     command = "clean"
 
     def __call__(self, args):

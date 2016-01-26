@@ -5,14 +5,14 @@ import hashlib
 import json
 import os
 
-from ..base import BaseCommand
+from pebble_tool.commands.sdk.project import SDKProjectCommand
 
 from pebble_tool.sdk.templates import FILE_WSCRIPT, FILE_WSCRIPT_LEGACY2
 from pebble_tool.sdk.project import PebbleProject, OutdatedProjectException
 from pebble_tool.sdk import pebble_platforms
 
 
-class PblProjectConverter(BaseCommand):
+class PblProjectConverter(SDKProjectCommand):
     """Structurally converts an SDK 2 project to an SDK 3 project. Code changes may still be required."""
     command = 'convert-project'
 
