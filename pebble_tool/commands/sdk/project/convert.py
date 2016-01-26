@@ -5,9 +5,9 @@ import hashlib
 import json
 import os
 
-from pebble_tool.commands.sdk.project import SDKProjectCommand
+from shutil import copy2
 
-from pebble_tool.sdk.templates import FILE_WSCRIPT, FILE_WSCRIPT_LEGACY2
+from pebble_tool.commands.sdk.project import SDKProjectCommand
 from pebble_tool.sdk.project import PebbleProject, OutdatedProjectException
 from pebble_tool.sdk import pebble_platforms
 
@@ -17,24 +17,23 @@ class PblProjectConverter(SDKProjectCommand):
     command = 'convert-project'
 
     def __call__(self, args):
-        super(PblProjectConverter, self).__call__(args)
         try:
-            PebbleProject()
+            super(PblProjectConverter, self).__call__(args)
             print("No conversion required")
         except OutdatedProjectException:
             self._convert_project()
             print("Project successfully converted!")
 
-    @classmethod
-    def _convert_project(cls):
+    def _convert_project(self):
         project_root = os.getcwd()
+        project_template_path = os.path.join(self.get_sdk_path(), 'pebble', 'common', 'templates')
 
-        cls._generate_appinfo_from_old_project(project_root)
+        self._generate_appinfo_from_old_project(project_root)
 
         wscript_path = os.path.join(project_root, "wscript")
 
-        wscript2_hash = hashlib.md5(FILE_WSCRIPT_LEGACY2).hexdigest()
-        wscript3_hash = hashlib.md5(FILE_WSCRIPT).hexdigest()
+        wscript2_hash = hashlib.md5(open(os.path.join(project_template_path, 'wscript_sdk2')).read()).hexdigest()
+        wscript3_hash = hashlib.md5(open(os.path.join(project_template_path, 'wscript')).read()).hexdigest()
         with open(wscript_path, "r") as f:
             current_hash = hashlib.md5(f.read()).hexdigest()
 
@@ -44,9 +43,7 @@ class PblProjectConverter(SDKProjectCommand):
             os.rename(wscript_path, wscript_path + '.backup')
 
         print('Generating new 3.x wscript')
-        with open(wscript_path, "w") as f:
-            f.write(FILE_WSCRIPT)
-
+        copy2(os.path.join(project_template_path, 'wscript'), wscript_path)
         os.system('pebble clean')
 
     @classmethod
