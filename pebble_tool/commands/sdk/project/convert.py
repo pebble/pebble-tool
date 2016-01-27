@@ -27,6 +27,8 @@ class PblProjectConverter(SDKProjectCommand):
     def _convert_project(self):
         project_root = os.getcwd()
         project_template_path = os.path.join(self.get_sdk_path(), 'pebble', 'common', 'templates')
+        if not os.path.exists(project_template_path):
+            project_template_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'sdk', 'templates')
 
         self._generate_appinfo_from_old_project(project_root)
 

@@ -8,8 +8,8 @@ import uuid
 from shutil import copy2
 
 from . import SDKCommand
-from pebble_tool.sdk import SDK_VERSION
-from pebble_tool.exceptions import MissingSDK, ToolError
+from pebble_tool.sdk import SDK_VERSION, sdk_version
+from pebble_tool.exceptions import ToolError
 from pebble_tool.util.analytics import post_event
 
 
@@ -39,7 +39,7 @@ class NewProjectCommand(SDKCommand):
 
         project_template_path = os.path.join(self.get_sdk_path(), 'pebble', 'common', 'templates')
         if not os.path.exists(project_template_path):
-            raise MissingSDK("Missing default SDK project template files at {}.".format(project_template_path))
+            project_template_path = os.path.join(os.path.dirname(__file__), '..', '..', 'sdk', 'templates')
 
         # Create main .c file
         if args.simple:
@@ -78,7 +78,10 @@ class NewProjectCommand(SDKCommand):
                   os.path.join(project_worker_src, "{}_worker.c".format(project_name)))
 
         # Add wscript file
-        copy2(os.path.join(project_template_path, 'wscript'), os.path.join(project_root, "wscript"))
+        if self.sdk == "2.9":
+            copy2(os.path.join(project_template_path, 'wscript_sdk2'), os.path.join(project_root, "wscript"))
+        else:
+            copy2(os.path.join(project_template_path, 'wscript'), os.path.join(project_root, "wscript"))
 
         post_event("sdk_create_project", javascript=args.javascript, worker=args.worker)
         print("Created new project {}".format(args.name))
