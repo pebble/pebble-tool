@@ -66,8 +66,14 @@ class NewProjectCommand(SDKCommand):
             project_js_src = os.path.join(project_src, "js")
             os.makedirs(project_js_src)
 
-            copy2(os.path.join(project_template_path, 'pebble-js-app.js'),
-                  os.path.join(project_js_src, 'pebble-js-app.js'))
+            try:
+                copy2(os.path.join(project_template_path, 'app.js'),
+                      os.path.join(project_js_src, 'app.js'))
+            except IOError as e:
+                if e.errno != errno.ENOENT:
+                    raise e
+                copy2(os.path.join(project_template_path, 'pebble-js-app.js'),
+                      os.path.join(project_js_src, 'pebble-js-app.js'))
 
         # Add background worker files if applicable
         if args.worker:
