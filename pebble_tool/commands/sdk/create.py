@@ -78,7 +78,7 @@ class NewProjectCommand(SDKCommand):
                   os.path.join(project_worker_src, "{}_worker.c".format(project_name)))
 
         # Add wscript file
-        if self.sdk == "2.9":
+        if self.sdk == "2.9" or sdk_version() == "2.9":
             copy2(os.path.join(project_template_path, 'wscript_sdk2'), os.path.join(project_root, "wscript"))
         else:
             copy2(os.path.join(project_template_path, 'wscript'), os.path.join(project_root, "wscript"))
