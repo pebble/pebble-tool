@@ -57,6 +57,7 @@ class PebbleProject(object):
         self.version = self.appinfo['versionLabel']
         self.sdk_version = self.appinfo.get('sdkVersion', 2)
         self.target_platforms = self.appinfo.get('targetPlatforms', pebble_platforms)
+        self.enable_multi_js = self.appinfo.get('enableMultiJS', False)
         self.capabilities = self.appinfo.get('capabilities', [])
 
         watchapp = self.appinfo.get('watchapp', {})
