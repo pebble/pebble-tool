@@ -7,11 +7,11 @@ import sys
 from pebble_tool.sdk import sdk_path
 from pebble_tool.exceptions import PebbleProjectException, ToolError
 from pebble_tool.sdk.project import PebbleProject
-from . import SDKCommand
-from ..base import BaseCommand
+from pebble_tool.commands.sdk.project import SDKProjectCommand
+from pebble_tool.commands.base import BaseCommand
 
 
-class AnalyseSizeCommand(SDKCommand):
+class AnalyseSizeCommand(SDKProjectCommand):
     """Analyze the size of your pebble app."""
     command = "analyze-size"
 
