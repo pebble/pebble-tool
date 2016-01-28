@@ -3,9 +3,10 @@ from __future__ import absolute_import, print_function
 import errno
 import json
 import os
-import uuid
 
 from shutil import copy2
+from string import Template
+from uuid import uuid4
 
 from . import SDKCommand
 from pebble_tool.sdk import SDK_VERSION, sdk_version
@@ -50,13 +51,10 @@ class NewProjectCommand(SDKCommand):
 
         # Add appinfo.json file
         with open(os.path.join(project_template_path, 'appinfo.json')) as f:
-            appinfo = json.load(f)
-        appinfo['uuid'] = str(uuid.uuid4())
-        appinfo['shortName'] = project_name
-        appinfo['longName'] = project_name
-        appinfo['sdkVersion'] = SDK_VERSION
+            appinfo = Template(f.read())
+
         with open(os.path.join(project_root, "appinfo.json"), "w") as f:
-            json.dump(appinfo, f, indent=2, separators=(',', ': '))
+            f.write(appinfo.substitute(uuid=str(uuid4()), project_name=project_name, sdk_version=SDK_VERSION))
 
         # Add .gitignore file
         copy2(os.path.join(project_template_path, 'gitignore'), os.path.join(project_root, '.gitignore'))

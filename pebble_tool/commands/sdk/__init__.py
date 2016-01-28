@@ -5,7 +5,7 @@ import os
 import subprocess
 import logging
 
-from pebble_tool.exceptions import (ToolError, MissingSDK)
+from pebble_tool.exceptions import ToolError, MissingSDK
 from pebble_tool.sdk import add_tools_to_path, sdk_path, sdk_manager
 from ..base import BaseCommand
 
