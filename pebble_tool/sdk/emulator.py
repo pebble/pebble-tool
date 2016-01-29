@@ -264,7 +264,7 @@ class ManagedEmulatorTransport(WebsocketTransport):
 
             # Copy the compressed file.
             with bz2.BZ2File(sdk_qemu_spi_flash) as from_file:
-                with open(path, 'bw') as to_file:
+                with open(path, 'wb') as to_file:
                     while True:
                         data = from_file.read(512)
                         if not data:
