@@ -5,11 +5,8 @@ import os
 import subprocess
 import logging
 
-from pebble_tool.exceptions import (ToolError, MissingSDK, PebbleProjectException, InvalidJSONException,
-                                    InvalidProjectException, OutdatedProjectException)
+from pebble_tool.exceptions import ToolError, MissingSDK
 from pebble_tool.sdk import add_tools_to_path, sdk_path, sdk_manager
-from pebble_tool.sdk.project import PebbleProject
-from pebble_tool.util.analytics import post_event
 from ..base import BaseCommand
 
 logger = logging.getLogger("pebble_tool.commands.sdk")
@@ -22,10 +19,6 @@ class SDKCommand(BaseCommand):
         if not os.path.exists(os.path.join(path, 'pebble', 'waf')):
             raise MissingSDK("SDK unavailable; can't run this command.")
         return path
-
-    @property
-    def waf_path(self):
-        return os.path.join(self.get_sdk_path(), 'pebble', 'waf')
 
     @classmethod
     def add_parser(cls, parser):
@@ -55,31 +48,8 @@ class SDKCommand(BaseCommand):
             # We have a viable python2. Use our hack to stick 'python' into the path.
             os.environ['PATH'] = '{}:{}'.format(os.path.normpath(os.path.dirname(__file__)), os.environ['PATH'])
 
-    def _waf(self, command, *args):
-        args = list(args)
-        if self._verbosity > 0:
-            v = '-' + ('v' * self._verbosity)
-            args = [v] + args
-        virtualenv = os.path.join(self.get_sdk_path(), '..', '.env')
-        command = [os.path.join(virtualenv, 'bin', 'python'), self.waf_path, command] + args
-        logger.debug("waf command: %s", subprocess.list2cmdline(command))
-        env = os.environ.copy()
-        env['PYTHONHOME'] = virtualenv
-        subprocess.check_call(command, env=env)
-
     def __call__(self, args):
         super(SDKCommand, self).__call__(args)
         self.sdk = args.sdk
-        try:
-            self.project = PebbleProject()
-        except PebbleProjectException as e:
-            event_map = {
-                InvalidProjectException: "sdk_run_without_project",
-                InvalidJSONException: "sdk_json_error",
-                OutdatedProjectException: "sdk_json_error",
-            }
-            if type(e) in event_map:
-                post_event(event_map[type(e)])
-            raise
         self._fix_python()
         self.add_arm_tools_to_path()
