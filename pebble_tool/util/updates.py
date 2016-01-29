@@ -76,7 +76,7 @@ def _handle_tool_update(version, release_notes=None):
 
 def _get_platform():
     sys_platform = sys.platform.rstrip('2')  # "linux2" on python < 3.3...
-    return sys_platform + str(int(round(math.log(sys.maxint, 2)+1)))
+    return sys_platform + str(int(round(math.log(sys.maxsize, 2)+1)))
 
 
 def wait_for_update_checks(timeout):

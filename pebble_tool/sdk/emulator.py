@@ -236,7 +236,7 @@ class ManagedEmulatorTransport(WebsocketTransport):
         else:
             post_event("qemu_launched", success=False, reason="qemu_launch_timeout")
             raise ToolError("Emulator launch timed out.")
-        received = ''
+        received = b''
         while True:
             try:
                 received += s.recv(256)
@@ -245,7 +245,7 @@ class ManagedEmulatorTransport(WebsocketTransport):
                 if e.errno != errno.EINTR:
                     raise
             # PBL-21275: we'll add less hacky solutions for this to the firmware.
-            if "<SDK Home>" in received or "<Launcher>" in received:
+            if b"<SDK Home>" in received or b"<Launcher>" in received:
                 break
         s.close()
         post_event("qemu_launched", success=True)
@@ -264,7 +264,7 @@ class ManagedEmulatorTransport(WebsocketTransport):
 
             # Copy the compressed file.
             with bz2.BZ2File(sdk_qemu_spi_flash) as from_file:
-                with open(path, 'w') as to_file:
+                with open(path, 'bw') as to_file:
                     while True:
                         data = from_file.read(512)
                         if not data:
