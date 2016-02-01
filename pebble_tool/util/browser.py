@@ -7,8 +7,7 @@ import pyqrcode
 import socket
 from socket import gethostname, gethostbyname
 import time
-from six.moves import urllib
-import urllib
+from six.moves.urllib import parse as urlparse
 import webbrowser
 
 from .phone_sensor import SENSOR_PAGE_HTML
@@ -49,14 +48,14 @@ class BrowserController(object):
             server.handle_request()
 
     def url_append_params(self, url, params):
-        parsed = urllib.urlparse(url, "http")
+        parsed = urlparse.urlparse(url, "http")
         query = parsed.query
         if parsed.query != '':
             query += '&'
 
-        encoded_params = urllib.urlencode(params)
+        encoded_params = urlparse.urlencode(params)
         query += encoded_params
-        return urllib.urlunparse((parsed.scheme, parsed.netloc, parsed.path, parsed.params, query, parsed.fragment))
+        return urlparse.urlunparse((parsed.scheme, parsed.netloc, parsed.path, parsed.params, query, parsed.fragment))
 
     def serve_sensor_page(self, pypkjs_port, port=None):
         self.port = port or self._choose_port()
