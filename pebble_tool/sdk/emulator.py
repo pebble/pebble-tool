@@ -142,6 +142,7 @@ class ManagedEmulatorTransport(WebsocketTransport):
 
     def _spawn_processes(self):
         if self.version is None:
+            sdk_path()  # Force an SDK to be installed.
             self.version = sdk_manager.get_current_sdk()
         if self.qemu_pid is None:
             logger.info("Spawning QEMU.")
