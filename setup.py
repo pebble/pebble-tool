@@ -38,6 +38,8 @@ setup(name='pebble-tool',
       packages=find_packages(),
       package_data={
           'pebble_tool.commands.sdk': ['python'],
+          'pebble_tool.sdk': ['templates/*'],
+          'pebble_tool.util': ['js/*', 'stylesheets/*', '*.png'],
       },
       install_requires=requires,
       entry_points={
