@@ -106,7 +106,7 @@ class BrowserController(object):
                                                                self.requestline, code, size))
 
         server = BaseHTTPServer.HTTPServer(('', self.port), SensorPageHandler)
-        url = "{}:{}".format(gethostbyname(gethostname()), server.server_port)
+        url = "http://{}:{}".format(gethostbyname(gethostname()), server.server_port)
         url_code = pyqrcode.create(url)
         print(url_code.terminal(quiet_zone=1))
         print("=======================================================================================================")
