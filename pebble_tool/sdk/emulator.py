@@ -116,6 +116,7 @@ class ManagedEmulatorTransport(WebsocketTransport):
                 self.qemu_port = info['qemu']['port']
                 self.qemu_serial_port = info['qemu']['serial']
                 self.qemu_pid = info['qemu']['pid']
+                self.qemu_gdb_port = info['qemu'].get('gdb', None)
             else:
                 self.qemu_pid = None
 
@@ -136,6 +137,7 @@ class ManagedEmulatorTransport(WebsocketTransport):
         if self.qemu_pid is None:
             self.qemu_port = self._choose_port()
             self.qemu_serial_port = self._choose_port()
+            self.qemu_gdb_port = self._choose_port()
 
         if self.pypkjs_pid is None:
             self.pypkjs_port = self._choose_port()
@@ -164,6 +166,7 @@ class ManagedEmulatorTransport(WebsocketTransport):
                 'pid': self.qemu_pid,
                 'port': self.qemu_port,
                 'serial': self.qemu_serial_port,
+                'gdb': self.qemu_gdb_port,
             },
             'pypkjs': {
                 'pid': self.pypkjs_pid,
@@ -191,6 +194,7 @@ class ManagedEmulatorTransport(WebsocketTransport):
             "-serial", "tcp::{},server,nowait".format(self.qemu_port),
             "-serial", "tcp::{},server".format(self.qemu_serial_port),
             "-pflash", qemu_micro_flash,
+            "-gdb", "tcp::{},server,nowait".format(self.qemu_gdb_port),
         ]
 
         platform_args = {

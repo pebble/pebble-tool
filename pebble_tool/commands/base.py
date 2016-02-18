@@ -36,11 +36,14 @@ class BaseCommand(with_metaclass(SelfRegisteringCommand)):
 
     @classmethod
     def add_parser(cls, parser):
-        if cls.has_subcommands:
+        if hasattr(cls, 'epilog'):
+            epilog = cls.epilog
+        elif cls.has_subcommands:
             epilog = "For help on an individual subcommand, call that command with --help."
         else:
             epilog = None
-        parser = parser.add_parser(cls.command, parents=cls._shared_parser(), help=cls.__doc__, epilog=epilog)
+        parser = parser.add_parser(cls.command, parents=cls._shared_parser(), help=cls.__doc__, epilog=epilog,
+                                   formatter_class=argparse.RawDescriptionHelpFormatter)
         parser.set_defaults(func=lambda x: cls()(x))
         return parser
 

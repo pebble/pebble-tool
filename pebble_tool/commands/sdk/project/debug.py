@@ -1,0 +1,96 @@
+from __future__ import absolute_import, print_function, division
+__author__ = 'katharine'
+
+import os
+import signal
+import subprocess
+
+from pebble_tool.commands.base import PebbleCommand
+from pebble_tool.sdk import sdk_manager
+from pebble_tool.sdk.emulator import ManagedEmulatorTransport
+from pebble_tool.exceptions import ToolError
+
+
+class GdbCommand(PebbleCommand):
+    """Connects a debugger to the current app."""
+    command = 'gdb'
+    valid_connections = {'emulator'}
+
+    def __call__(self, args):
+        super(GdbCommand, self).__call__(args)
+        # We poke around in the ManagedEmulatorTransport, so it's important that we actually have one.
+        # Just asserting is okay because this should already be enforced by valid_connections.
+        assert isinstance(self.pebble.transport, ManagedEmulatorTransport)
+
+        platform = self.pebble.transport.platform
+        sdk_version = self.pebble.transport.version
+        gdb_port = self.pebble.transport.qemu_gdb_port
+
+        sdk_root = sdk_manager.path_for_sdk(sdk_version)
+        fw_elf = os.path.join(sdk_root, 'pebble', platform, 'qemu', '{}_sdk_debug.elf'.format(platform))
+        if not os.path.exists(fw_elf):
+            raise ToolError("SDK {} does not support app debugging. You need at least SDK 3.10.".format(sdk_version))
+        elf_sections = subprocess.check_output(["arm-none-eabi-readelf", "-s", fw_elf])
+
+        # Figure out where we load the app into firmware memory
+        for line in elf_sections.split(b'\n'):
+            if b'__app_flash_load_start__' in line:
+                base_addr = int(line.split()[1], 16)
+                break
+        else:
+            raise ToolError("Couldn't find the app address offset.")
+
+        app_elf_path = os.path.join(os.getcwd(), 'build', platform, 'pebble-app.elf')
+        if not os.path.exists(app_elf_path):
+            raise ToolError("No app debugging information available. "
+                            "You must be in a project directory and have built the app.")
+
+        # Find the offset of each section in the app, and offset that by the base load address.
+        offsets = {}
+        for line in subprocess.check_output(["arm-none-eabi-objdump", "-h", app_elf_path]).decode('utf-8').split('\n'):
+            cols = line.split()
+            if len(cols) < 4:
+                continue
+
+            if cols[1] in ('.text', '.data', '.bss'):
+                offsets[cols[1][1:]] = int(cols[3], 16) + base_addr
+
+        gdb_commands = [
+            "target remote :{}".format(gdb_port),
+            "set confirm off",
+            'add-symbol-file "{elf}" {text} -s .data {data} -s .bss {bss}'.format(elf=app_elf_path, **offsets),
+            "set confirm on",
+            "break app_crashed",  # app crashes (as of FW 3.10) go through this symbol for our convenience.
+            'echo \nPress ctrl-D or type \'quit\' to exit.\n',
+            'echo Try `pebble gdb --help` for a short cheat sheet.\n'
+        ]
+
+        gdb_args = ['arm-none-eabi-gdb', fw_elf, '-q'] + ['--ex={}'.format(x) for x in gdb_commands]
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        try:
+            subprocess.call(gdb_args)
+        except KeyboardInterrupt:
+            pass
+
+    epilog = """
+gdb cheat sheet:
+  ctrl-C                Pause app execution
+  ctrl-D, quit          Quit gdb
+  break, b              Set a breakpoint. This can be either a symbol or a
+                        position:
+                         - `b show_train_info` to break when entering a
+                            function
+                         - `b stop_info.c:45` to break on line 45 of stop_info.c.
+  step, s               Step forward one line.
+  next, n               Step *over* the current line, avoiding stopping for
+                        any functions it calls into.
+  finish                Run forward until exiting the current stack frame.
+  backtrace, bt         Print out the current call stack.
+  p [expression]        Print the result of evaluating the given expression.
+  info args             Show the values of arguments to the current function.
+  info locals           Show local variables in the current frame.
+  bt full               Show all local variables in all stack frames.
+  info break            List break points (#1 is <app_crashed>, and is
+                        inserted by the pebble tool).
+  delete [n]            Delete breakpoint #n.
+"""
