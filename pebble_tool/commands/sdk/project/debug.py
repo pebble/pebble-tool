@@ -66,11 +66,11 @@ class GdbCommand(PebbleCommand):
         ]
 
         gdb_args = ['arm-none-eabi-gdb', fw_elf, '-q'] + ['--ex={}'.format(x) for x in gdb_commands]
+
+        # Ignore SIGINT, or we'll die every time the user tries to pause execution.
         signal.signal(signal.SIGINT, signal.SIG_IGN)
-        try:
-            subprocess.call(gdb_args)
-        except KeyboardInterrupt:
-            pass
+
+        subprocess.call(gdb_args)
 
     epilog = """
 gdb cheat sheet:
