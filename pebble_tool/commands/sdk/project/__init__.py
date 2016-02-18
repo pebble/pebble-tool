@@ -19,7 +19,7 @@ class SDKProjectCommand(SDKCommand):
     def waf_path(self):
         return os.path.join(self.get_sdk_path(), 'pebble', 'waf')
 
-    def _waf(self, command, *args):
+    def _waf(self, command, extra_env=None, *args):
         args = list(args)
         if self._verbosity > 0:
             v = '-' + ('v' * self._verbosity)
@@ -29,6 +29,8 @@ class SDKProjectCommand(SDKCommand):
         logger.debug("waf command: %s", subprocess.list2cmdline(command))
         env = os.environ.copy()
         env['PYTHONHOME'] = virtualenv
+        if extra_env is not None:
+            env.update(extra_env)
         subprocess.check_call(command, env=env)
 
     def __call__(self, args):

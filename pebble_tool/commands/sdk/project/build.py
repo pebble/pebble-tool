@@ -24,7 +24,10 @@ class BuildCommand(SDKProjectCommand):
                 waf.remove('--')
             except ValueError:
                 pass
-            self._waf("configure")
+            extra_env = {}
+            if args.debug:
+                extra_env = {'CFLAGS': os.environ.get('CFLAGS', '') + ' -O0'}
+            self._waf("configure", extra_env=extra_env)
             self._waf("build", *waf)
         except subprocess.CalledProcessError:
             duration = time.time() - start_time
@@ -64,6 +67,8 @@ class BuildCommand(SDKProjectCommand):
     @classmethod
     def add_parser(cls, parser):
         parser = super(BuildCommand, cls).add_parser(parser)
+        parser.add_argument('--debug', action='store_true', help="Build without optimisations for easier debugging. "
+                                                                 "This may cause apps to run slower or not fit at all.")
         parser.add_argument('args', nargs=argparse.REMAINDER, help="Extra arguments to pass to waf.")
         return parser
 
