@@ -16,6 +16,29 @@ class GdbCommand(PebbleCommand):
     command = 'gdb'
     valid_connections = {'emulator'}
 
+    @classmethod
+    def _find_app_load_offset(cls, fw_elf):
+        elf_sections = subprocess.check_output(["arm-none-eabi-readelf", "-s", fw_elf])
+
+        # Figure out where we load the app into firmware memory
+        for line in elf_sections.split(b'\n'):
+            if b'__app_flash_load_start__' in line:
+                return int(line.split()[1], 16)
+        else:
+            raise ToolError("Couldn't find the app address offset.")
+
+    @classmethod
+    def _find_real_app_section_offsets(cls, base_addr, app_elf_path):
+        offsets = {}
+        for line in subprocess.check_output(["arm-none-eabi-objdump", "-h", app_elf_path]).decode('utf-8').split('\n'):
+            cols = line.split()
+            if len(cols) < 4:
+                continue
+
+            if cols[1] in ('.text', '.data', '.bss'):
+                offsets[cols[1][1:]] = int(cols[3], 16) + base_addr
+        return offsets
+
     def __call__(self, args):
         super(GdbCommand, self).__call__(args)
         # We poke around in the ManagedEmulatorTransport, so it's important that we actually have one.
@@ -30,30 +53,15 @@ class GdbCommand(PebbleCommand):
         fw_elf = os.path.join(sdk_root, 'pebble', platform, 'qemu', '{}_sdk_debug.elf'.format(platform))
         if not os.path.exists(fw_elf):
             raise ToolError("SDK {} does not support app debugging. You need at least SDK 3.10.".format(sdk_version))
-        elf_sections = subprocess.check_output(["arm-none-eabi-readelf", "-s", fw_elf])
 
-        # Figure out where we load the app into firmware memory
-        for line in elf_sections.split(b'\n'):
-            if b'__app_flash_load_start__' in line:
-                base_addr = int(line.split()[1], 16)
-                break
-        else:
-            raise ToolError("Couldn't find the app address offset.")
+        base_address = self._find_app_load_offset(fw_elf)
 
         app_elf_path = os.path.join(os.getcwd(), 'build', platform, 'pebble-app.elf')
         if not os.path.exists(app_elf_path):
             raise ToolError("No app debugging information available. "
                             "You must be in a project directory and have built the app.")
 
-        # Find the offset of each section in the app, and offset that by the base load address.
-        offsets = {}
-        for line in subprocess.check_output(["arm-none-eabi-objdump", "-h", app_elf_path]).decode('utf-8').split('\n'):
-            cols = line.split()
-            if len(cols) < 4:
-                continue
-
-            if cols[1] in ('.text', '.data', '.bss'):
-                offsets[cols[1][1:]] = int(cols[3], 16) + base_addr
+        offsets = self._find_real_app_section_offsets(base_address, app_elf_path)
 
         gdb_commands = [
             "target remote :{}".format(gdb_port),
