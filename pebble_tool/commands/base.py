@@ -72,7 +72,10 @@ class PebbleCommand(BaseCommand):
     @classmethod
     def _shared_parser(cls):
         parser = argparse.ArgumentParser(add_help=False)
-        group = parser.add_mutually_exclusive_group()
+        if len(cls.valid_connections) < 2 :
+            group = parser
+        else :
+            group = parser.add_mutually_exclusive_group()
         if 'phone' in cls.valid_connections:
             group.add_argument('--phone', metavar='phone_ip',
                                 help="When using the developer connection, your phone's IP or hostname. "
