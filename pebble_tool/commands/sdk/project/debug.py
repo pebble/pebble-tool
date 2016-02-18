@@ -48,6 +48,8 @@ class GdbCommand(PebbleCommand):
         platform = self.pebble.transport.platform
         sdk_version = self.pebble.transport.version
         gdb_port = self.pebble.transport.qemu_gdb_port
+        if gdb_port is None:
+            raise ToolError("The emulator does not have gdb support. Try killing and re-running it.")
 
         sdk_root = sdk_manager.path_for_sdk(sdk_version)
         fw_elf = os.path.join(sdk_root, 'pebble', platform, 'qemu', '{}_sdk_debug.elf'.format(platform))
