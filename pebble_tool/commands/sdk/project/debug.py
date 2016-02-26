@@ -12,7 +12,7 @@ from pebble_tool.exceptions import ToolError
 
 
 class GdbCommand(PebbleCommand):
-    """Connects a debugger to the current app."""
+    """Connects a debugger to the current app. Only works in the emulator."""
     command = 'gdb'
     valid_connections = {'emulator'}
 
@@ -73,6 +73,7 @@ class GdbCommand(PebbleCommand):
             "break app_crashed",  # app crashes (as of FW 3.10) go through this symbol for our convenience.
             'echo \nPress ctrl-D or type \'quit\' to exit.\n',
             'echo Try `pebble gdb --help` for a short cheat sheet.\n'
+            'echo Note that the emulator does not yet crash on memory access violations.\n'
         ]
 
         gdb_args = ['arm-none-eabi-gdb', fw_elf, '-q'] + ['--ex={}'.format(x) for x in gdb_commands]
