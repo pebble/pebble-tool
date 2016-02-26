@@ -66,13 +66,14 @@ class GdbCommand(PebbleCommand):
         offsets = self._find_real_app_section_offsets(base_address, app_elf_path)
 
         gdb_commands = [
+            "set charset US-ASCII",  # Avoid a bug in the ancient version of libiconv apple ships.
             "target remote :{}".format(gdb_port),
             "set confirm off",
             'add-symbol-file "{elf}" {text} -s .data {data} -s .bss {bss}'.format(elf=app_elf_path, **offsets),
             "set confirm on",
             "break app_crashed",  # app crashes (as of FW 3.10) go through this symbol for our convenience.
             'echo \nPress ctrl-D or type \'quit\' to exit.\n',
-            'echo Try `pebble gdb --help` for a short cheat sheet.\n'
+            'echo Try `pebble gdb --help` for a short cheat sheet.\n',
             'echo Note that the emulator does not yet crash on memory access violations.\n'
         ]
 
