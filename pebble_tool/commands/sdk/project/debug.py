@@ -86,12 +86,13 @@ class GdbCommand(PebbleCommand):
 
     epilog = """
 gdb cheat sheet:
-  ctrl-C                Pause app execution
-  ctrl-D, quit          Quit gdb
+  ctrl-C                Pause app execution.
+  ctrl-D, quit          Quit gdb.
+  continue, c           Continue app execution.
   break, b              Set a breakpoint. This can be either a symbol or a
                         position:
                          - `b show_train_info` to break when entering a
-                            function
+                            function.
                          - `b stop_info.c:45` to break on line 45 of stop_info.c.
   step, s               Step forward one line.
   next, n               Step *over* the current line, avoiding stopping for
@@ -99,6 +100,7 @@ gdb cheat sheet:
   finish                Run forward until exiting the current stack frame.
   backtrace, bt         Print out the current call stack.
   p [expression]        Print the result of evaluating the given expression.
+  set var x = foo       Set the value of the variable x to foo.
   info args             Show the values of arguments to the current function.
   info locals           Show local variables in the current frame.
   bt full               Show all local variables in all stack frames.
