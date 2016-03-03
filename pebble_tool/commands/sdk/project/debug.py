@@ -19,15 +19,15 @@ class GdbCommand(PebbleCommand):
     valid_connections = {'emulator'}
 
     @classmethod
-    def _find_app_load_offset(cls, fw_elf):
-        elf_sections = subprocess.check_output(["arm-none-eabi-readelf", "-s", fw_elf])
+    def _find_app_load_offset(cls, fw_elf, kind):
+        elf_sections = subprocess.check_output(["arm-none-eabi-readelf", "-W", "-s", fw_elf])
 
         # Figure out where we load the app into firmware memory
         for line in elf_sections.split(b'\n'):
-            if b'__app_flash_load_start__' in line:
+            if b'__{}_flash_load_start__'.format(kind) in line:
                 return int(line.split()[1], 16)
         else:
-            raise ToolError("Couldn't find the app address offset.")
+            raise ToolError("Couldn't find the {} address offset.".format(kind))
 
     @classmethod
     def _find_real_app_section_offsets(cls, base_addr, app_elf_path):
@@ -40,6 +40,16 @@ class GdbCommand(PebbleCommand):
             if cols[1] in ('.text', '.data', '.bss'):
                 offsets[cols[1][1:]] = int(cols[3], 16) + base_addr
         return offsets
+
+    def _get_symbol_command(self, elf, kind):
+        base_address = self._find_app_load_offset(self._fw_elf, kind)
+        offsets = self._find_real_app_section_offsets(base_address, elf)
+
+        add_symbol_file = 'add-symbol-file "{elf}" {text} '.format(elf=elf, **offsets)
+        del offsets['text']
+        add_symbol_file += ' '.join('-s .{} {}'.format(k, v) for k, v in iteritems(offsets))
+
+        return add_symbol_file
 
     def __call__(self, args):
         super(GdbCommand, self).__call__(args)
@@ -54,36 +64,37 @@ class GdbCommand(PebbleCommand):
             raise ToolError("The emulator does not have gdb support. Try killing and re-running it.")
 
         sdk_root = sdk_manager.path_for_sdk(sdk_version)
-        fw_elf = os.path.join(sdk_root, 'pebble', platform, 'qemu', '{}_sdk_debug.elf'.format(platform))
-        if not os.path.exists(fw_elf):
-            raise ToolError("SDK {} does not support app debugging. You need at least SDK 3.10.".format(sdk_version))
+        self._fw_elf = os.path.join(sdk_root, 'pebble', platform, 'qemu', '{}_sdk_debug.elf'.format(platform))
 
-        base_address = self._find_app_load_offset(fw_elf)
+        if not os.path.exists(self._fw_elf):
+            raise ToolError("SDK {} does not support app debugging. You need at least SDK 3.10.".format(sdk_version))
 
         app_elf_path = os.path.join(os.getcwd(), 'build', platform, 'pebble-app.elf')
         if not os.path.exists(app_elf_path):
             raise ToolError("No app debugging information available. "
                             "You must be in a project directory and have built the app.")
 
-        offsets = self._find_real_app_section_offsets(base_address, app_elf_path)
-
-        add_symbol_file = 'add-symbol-file "{elf}" {text} '.format(elf=app_elf_path, **offsets)
-        del offsets['text']
-        add_symbol_file += ' '.join('-s .{} {}'.format(k, v) for k, v in iteritems(offsets))
-
         gdb_commands = [
             "set charset US-ASCII",  # Avoid a bug in the ancient version of libiconv apple ships.
             "target remote :{}".format(gdb_port),
             "set confirm off",
-            add_symbol_file,
+            self._get_symbol_command(app_elf_path, 'app')
+        ]
+
+        # Optionally add the worker symbols, if any exist.
+        worker_elf_path = os.path.join(os.getcwd(), 'build', platform, 'pebble-worker.elf')
+        if os.path.exists(worker_elf_path):
+            gdb_commands.append(self._get_symbol_command(worker_elf_path, 'worker'))
+
+        gdb_commands.extend([
             "set confirm on",
             "break app_crashed",  # app crashes (as of FW 3.10) go through this symbol for our convenience.
             'echo \nPress ctrl-D or type \'quit\' to exit.\n',
             'echo Try `pebble gdb --help` for a short cheat sheet.\n',
             'echo Note that the emulator does not yet crash on memory access violations.\n'
-        ]
+        ])
 
-        gdb_args = ['arm-none-eabi-gdb', fw_elf, '-q'] + ['--ex={}'.format(x) for x in gdb_commands]
+        gdb_args = ['arm-none-eabi-gdb', self._fw_elf, '-q'] + ['--ex={}'.format(x) for x in gdb_commands]
 
         # Ignore SIGINT, or we'll die every time the user tries to pause execution.
         signal.signal(signal.SIGINT, signal.SIG_IGN)
