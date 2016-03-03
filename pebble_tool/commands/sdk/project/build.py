@@ -27,8 +27,8 @@ class BuildCommand(SDKProjectCommand):
             extra_env = {}
             if args.debug:
                 extra_env = {'CFLAGS': os.environ.get('CFLAGS', '') + ' -O0'}
-            self._waf("configure", extra_env=extra_env)
-            self._waf("build", *waf)
+            self._waf("configure", extra_env=extra_env, args=waf)
+            self._waf("build", args=waf)
         except subprocess.CalledProcessError:
             duration = time.time() - start_time
             post_event("app_build_failed", build_time=duration)

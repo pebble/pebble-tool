@@ -19,7 +19,7 @@ class SDKProjectCommand(SDKCommand):
     def waf_path(self):
         return os.path.join(self.get_sdk_path(), 'pebble', 'waf')
 
-    def _waf(self, command, extra_env=None, *args):
+    def _waf(self, command, extra_env=None, args=None):
         args = list(args)
         if self._verbosity > 0:
             v = '-' + ('v' * self._verbosity)
