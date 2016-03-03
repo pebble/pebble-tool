@@ -69,7 +69,7 @@ class GdbCommand(PebbleCommand):
 
         add_symbol_file = 'add-symbol-file "{elf}" {text} '.format(elf=app_elf_path, **offsets)
         del offsets['text']
-        add_symbol_file += ''.join('-s .{} {}'.format(k, v) for k, v in iteritems(offsets))
+        add_symbol_file += ' '.join('-s .{} {}'.format(k, v) for k, v in iteritems(offsets))
 
         gdb_commands = [
             "set charset US-ASCII",  # Avoid a bug in the ancient version of libiconv apple ships.
