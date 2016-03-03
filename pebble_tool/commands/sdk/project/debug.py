@@ -1,6 +1,8 @@
 from __future__ import absolute_import, print_function, division
 __author__ = 'katharine'
 
+from six import iteritems
+
 import os
 import signal
 import subprocess
@@ -65,11 +67,15 @@ class GdbCommand(PebbleCommand):
 
         offsets = self._find_real_app_section_offsets(base_address, app_elf_path)
 
+        add_symbol_file = 'add-symbol-file "{elf}" {text} '.format(elf=app_elf_path, **offsets)
+        del offsets['text']
+        add_symbol_file += ''.join('-s .{} {}'.format(k, v) for k, v in iteritems(offsets))
+
         gdb_commands = [
             "set charset US-ASCII",  # Avoid a bug in the ancient version of libiconv apple ships.
             "target remote :{}".format(gdb_port),
             "set confirm off",
-            'add-symbol-file "{elf}" {text} -s .data {data} -s .bss {bss}'.format(elf=app_elf_path, **offsets),
+            add_symbol_file,
             "set confirm on",
             "break app_crashed",  # app crashes (as of FW 3.10) go through this symbol for our convenience.
             'echo \nPress ctrl-D or type \'quit\' to exit.\n',
