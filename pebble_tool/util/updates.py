@@ -53,25 +53,29 @@ class UpdateChecker(threading.Thread):
             atexit.register(self.callback, new_version, release_notes)
 
 
+def _print(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+
+
 def _handle_sdk_update(version, release_notes=None):
     # We know the SDK was new when the version check occurred, but it is possible that it's
     # been installed since then. Therefore, check again.
     if version not in sdk_manager.list_local_sdk_versions():
-        print()
-        print("A new SDK, version {0}, is available! Run `pebble sdk install {0}` to get it.".format(version))
+        _print()
+        _print("A new SDK, version {0}, is available! Run `pebble sdk install {0}` to get it.".format(version))
         if release_notes is not None:
-            print(release_notes)
+            _print(release_notes)
 
 
 def _handle_tool_update(version, release_notes=None):
-    print()
-    print("An updated pebble tool, version {}, is available.".format(version))
+    _print()
+    _print("An updated pebble tool, version {}, is available.".format(version))
     if release_notes is not None:
-        print(release_notes)
+        _print(release_notes)
     if 'PEBBLE_IS_HOMEBREW' in os.environ:
-        print("Run `brew update && brew upgrade pebble-sdk` to get it.")
+        _print("Run `brew update && brew upgrade pebble-sdk` to get it.")
     else:
-        print("Head to https://developer.getpebble.com/sdk/beta/ to get it.")
+        _print("Head to https://developer.getpebble.com/sdk/beta/ to get it.")
 
 
 def _get_platform():
