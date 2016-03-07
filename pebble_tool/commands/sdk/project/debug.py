@@ -8,7 +8,7 @@ import signal
 import subprocess
 
 from pebble_tool.commands.base import PebbleCommand
-from pebble_tool.sdk import sdk_manager
+from pebble_tool.sdk import sdk_manager, add_tools_to_path
 from pebble_tool.sdk.emulator import ManagedEmulatorTransport
 from pebble_tool.exceptions import ToolError
 
@@ -56,6 +56,7 @@ class GdbCommand(PebbleCommand):
         # We poke around in the ManagedEmulatorTransport, so it's important that we actually have one.
         # Just asserting is okay because this should already be enforced by valid_connections.
         assert isinstance(self.pebble.transport, ManagedEmulatorTransport)
+        add_tools_to_path()
 
         platform = self.pebble.transport.platform
         sdk_version = self.pebble.transport.version
