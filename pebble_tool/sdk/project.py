@@ -106,6 +106,8 @@ class AppinfoProject(PebbleProject):
         self.enable_multi_js = self.appinfo.get('enableMultiJS', False)
         self.capabilities = self.appinfo.get('capabilities', [])
         self.project_type = self.appinfo.get('projectType', 'native')
+        self.resources = self.appinfo.get('resources', {})
+        self.message_keys = self.appinfo.get('appKeys', {})
         self.dependencies = {}
 
         watchapp = self.appinfo.get('watchapp', {})
@@ -166,6 +168,8 @@ class NpmProject(PebbleProject):
         self.project_type = self.appinfo.get('projectType', 'native')
         self.dependencies = self.project_info.get('dependencies', {})
         self.dependencies.update(self.project_info.get('devDependencies', {}))
+        self.resources = self.appinfo.get('resources', {})
+        self.message_keys = self.appinfo.get('messageKeys', {})
         if self.project_type != 'package':
             self.long_name = self.appinfo['displayName']
             self.uuid = uuid.UUID(self.appinfo['uuid'])
