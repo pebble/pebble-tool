@@ -171,6 +171,9 @@ class NpmProject(PebbleProject):
         self.resources = self.appinfo.get('resources', {})
         self.message_keys = self.appinfo.get('messageKeys', {})
         if self.project_type != 'package':
+            if 'uuid' not in self.appinfo:
+                raise InvalidProjectException("This project doesn't have a UUID, but appears to be an app. "
+                                              "Did you miss a 'projectType'?")
             self.long_name = self.appinfo.get('displayName', self.short_name)
             self.uuid = uuid.UUID(self.appinfo['uuid'])
             watchapp = self.appinfo.get('watchapp', {})
