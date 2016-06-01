@@ -14,7 +14,7 @@ from pebble_tool.sdk import pebble_platforms
 
 
 class PblProjectConverter(SDKProjectCommand):
-    """Structurally converts an SDK 2 project to an SDK 3 project. Code changes may still be required."""
+    """Converts an appinfo project from SDK 2 or SDK 3 to a modern package.json project."""
     command = 'convert-project'
 
     def __call__(self, args):
