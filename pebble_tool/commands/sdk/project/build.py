@@ -8,6 +8,7 @@ import time
 
 from pebble_tool.exceptions import BuildError
 from pebble_tool.util.analytics import post_event
+import pebble_tool.util.npm as npm
 from pebble_tool.commands.sdk.project import SDKProjectCommand
 
 
@@ -18,6 +19,13 @@ class BuildCommand(SDKProjectCommand):
     def __call__(self, args):
         super(BuildCommand, self).__call__(args)
         start_time = time.time()
+        if len(self.project.dependencies) > 0:
+            post_event('app_build_with_npm_deps')
+            try:
+                npm.invoke_npm(["install"])
+            except subprocess.CalledProcessError:
+                post_event("app_build_failed_npm")
+                raise BuildError("npm failed.")
         try:
             waf = list(args.args)
             try:
