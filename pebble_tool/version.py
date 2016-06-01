@@ -1,5 +1,5 @@
-version_base = (4, 2, 1)
-version_suffix = None
+version_base = (4, 3, 0)
+version_suffix = 'beta1'
 
 if version_suffix is None:
     __version_info__ = version_base
