@@ -171,7 +171,7 @@ class NpmProject(PebbleProject):
         self.resources = self.appinfo.get('resources', {})
         self.message_keys = self.appinfo.get('messageKeys', {})
         if self.project_type != 'package':
-            self.long_name = self.appinfo['displayName']
+            self.long_name = self.appinfo.get('displayName', self.short_name)
             self.uuid = uuid.UUID(self.appinfo['uuid'])
             watchapp = self.appinfo.get('watchapp', {})
             self.is_watchface = watchapp.get('watchface', False)

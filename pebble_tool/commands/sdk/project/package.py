@@ -11,7 +11,7 @@ __author__ = "katharine"
 
 
 class PackageManager(SDKProjectCommand):
-    """Manages available SDKs"""
+    """Manages npm packages."""
     command = 'package'
     has_subcommands = True
 
@@ -24,11 +24,11 @@ class PackageManager(SDKProjectCommand):
         parser = super(PackageManager, cls).add_parser(parser)
         subparsers = parser.add_subparsers(title="subcommand")
 
-        install_parser = subparsers.add_parser("install", help="Installs the given SDK.")
+        install_parser = subparsers.add_parser("install", help="Installs the given package.")
         install_parser.add_argument('package', nargs='?', help="npm package to install.")
         install_parser.set_defaults(sub_func=cls.do_install)
 
-        uninstall_parser = subparsers.add_parser("uninstall", help="Uninstalls the given SDK.")
+        uninstall_parser = subparsers.add_parser("uninstall", help="Uninstalls the given package.")
         uninstall_parser.add_argument('package', help="package to uninstall.")
         uninstall_parser.set_defaults(sub_func=cls.do_uninstall)
 
