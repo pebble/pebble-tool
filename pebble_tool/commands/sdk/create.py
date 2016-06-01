@@ -13,6 +13,54 @@ from pebble_tool.exceptions import ToolError
 from pebble_tool.util.analytics import post_event
 
 
+def _copy_template(name, directory_list, appinfo_list, file_list, create_dir_list):
+    try:
+        project_path = name
+        project_name = os.path.split(project_path)[1]
+        project_root = os.path.join(os.getcwd(), project_path)
+    except OSError as e:
+        if e.errno == errno.EEXIST:
+            raise ToolError("A directory called '{}' already exists.".format(project_name))
+        raise
+
+    for directory in directory_list:
+        if os.path.exists(directory):
+            template_path = directory
+            break
+    else:
+        raise ToolError("Can't create that sort of project with the current SDK.")
+
+    for appinfo_path in appinfo_list:
+        appinfo_path = os.path.join(template_path, appinfo_path)
+        if os.path.exists(appinfo_path):
+            file_list.append((appinfo_path, os.path.join(project_root, os.path.basename(appinfo_path))))
+            break
+    else:
+        raise ToolError("Couldn't find an appinfo-like file.")
+
+    for file_path in file_list:
+        if isinstance(file_path, basestring):
+            origin_path = os.path.join(template_path, file_path)
+            target_path = os.path.join(project_root, file_path)
+        else:
+            origin_path = os.path.join(template_path, file_path[0])
+            target_path = os.path.join(project_root, file_path[1])
+
+        if os.path.exists(origin_path):
+            try:
+                os.makedirs(os.path.dirname(target_path))
+            except OSError as e:
+                if e.errno != errno.EEXIST:
+                    raise
+            with open(origin_path) as f:
+                template = Template(f.read())
+            with open(target_path, 'w') as f:
+                f.write(template.substitute(uuid=str(uuid4()),
+                                            project_name=project_name,
+                                            display_name=project_name,
+                                            sdk_version=SDK_VERSION))
+
+
 class NewProjectCommand(SDKCommand):
     """Creates a new pebble project with the given name in a new directory."""
     command = 'new-project'
@@ -20,75 +68,29 @@ class NewProjectCommand(SDKCommand):
     def __call__(self, args):
         super(NewProjectCommand, self).__call__(args)
 
-        # User can give a path to a new project dir
         project_path = args.name
         project_name = os.path.split(project_path)[1]
-        project_root = os.path.join(os.getcwd(), project_path)
+        sdk2 = self.sdk == "2.9" or (self.sdk is None and sdk_version() == "2.9")
 
-        project_src = os.path.join(project_root, "src")
-
-        # Create directories
-        try:
-            os.makedirs(project_root)
-            os.makedirs(os.path.join(project_root, "resources"))
-            os.makedirs(project_src)
-        except OSError as e:
-            if e.errno == errno.EEXIST:
-                raise ToolError("A directory called '{}' already exists.".format(args.name))
-            raise
-
-        project_template_path = os.path.join(self.get_sdk_path(), 'pebble', 'common', 'templates')
-        if not os.path.exists(project_template_path):
-            project_template_path = os.path.join(os.path.dirname(__file__), '..', '..', 'sdk', 'templates')
-
-        # Create main .c file
-        if args.simple:
-            default_main = os.path.join(project_template_path, 'simple.c')
-        else:
-            default_main = os.path.join(project_template_path, 'main.c')
-        copy2(default_main, os.path.join(project_src, "{}.c".format(project_name)))
-
-        # Add appinfo.json file
-        with open(os.path.join(project_template_path, 'appinfo.json')) as f:
-            appinfo = Template(f.read())
-
-        with open(os.path.join(project_root, "appinfo.json"), "w") as f:
-            f.write(appinfo.substitute(uuid=str(uuid4()), project_name=project_name, sdk_version=SDK_VERSION))
-
-        # Add .gitignore file
-        copy2(os.path.join(project_template_path, 'gitignore'), os.path.join(project_root, '.gitignore'))
-
-        # Add javascript files if applicable
+        template_paths = [
+            os.path.join(self.get_sdk_path(), 'pebble', 'common', 'templates', 'app'),
+            os.path.join(self.get_sdk_path(), 'pebble', 'common', 'templates'),
+            os.path.join(os.path.dirname(__file__), '..', '..', 'sdk', 'templates'),
+        ]
+        file_list = [
+            ('gitignore', '.gitignore'),
+            ('simple.c' if args.simple else 'main.c', 'src/{}.c'.format(project_name)),
+            ('wscript_sdk2' if sdk2 else 'wscript', 'wscript')
+        ]
         if args.javascript:
-            project_js_src = os.path.join(project_src, "js")
-            os.makedirs(project_js_src)
-
-            try:
-                copy2(os.path.join(project_template_path, 'app.js'),
-                      os.path.join(project_js_src, 'app.js'))
-            except IOError as e:
-                if e.errno != errno.ENOENT:
-                    raise e
-                copy2(os.path.join(project_template_path, 'pebble-js-app.js'),
-                      os.path.join(project_js_src, 'pebble-js-app.js'))
-
-        # Add background worker files if applicable
+            file_list.extend([('app.js', 'src/js/app.js'), ('pebble-js-app.js', 'src/js/pebble-js-app.js')])
         if args.worker:
-            project_worker_src = os.path.join(project_root, "worker_src")
-            os.makedirs(project_worker_src)
-            # Add simple source file
-            copy2(os.path.join(project_template_path, 'worker.c'),
-                  os.path.join(project_worker_src, "{}_worker.c".format(project_name)))
+            file_list.append(('worker.c', 'worker/{}_worker.c'.format(project_name)))
 
-        # Add wscript file
-        if self.sdk == "2.9" or (self.sdk is None and sdk_version() == "2.9"):
-            copy2(os.path.join(project_template_path, 'wscript_sdk2'), os.path.join(project_root, "wscript"))
-        else:
-            copy2(os.path.join(project_template_path, 'wscript'), os.path.join(project_root, "wscript"))
+        _copy_template(args.name, template_paths, ['package.json', 'appinfo.json'], file_list, ['resources'])
 
         post_event("sdk_create_project", javascript=args.javascript, worker=args.worker)
         print("Created new project {}".format(args.name))
-
 
     @classmethod
     def add_parser(cls, parser):
@@ -97,4 +99,40 @@ class NewProjectCommand(SDKCommand):
         parser.add_argument("--simple", action="store_true", help="Create a minimal C file.")
         parser.add_argument("--javascript", action="store_true", help="Generate a JavaScript file.")
         parser.add_argument("--worker", action="store_true", help="Generate a background worker.")
+        return parser
+
+
+class NewPackageCommand(SDKCommand):
+    """Creates a new pebble package (not app or watchface) with the given name in a new directory."""
+    command = 'new-package'
+
+    def __call__(self, args):
+        super(NewPackageCommand, self).__call__(args)
+
+        package_path = args.name
+        package_name = os.path.split(package_path)[1]
+
+        template_paths = [
+            os.path.join(self.get_sdk_path(), 'pebble', 'common', 'templates', 'lib'),
+        ]
+        file_list = [
+            ('gitignore', '.gitignore'),
+            ('lib.c', 'src/c/{}.c'.format(package_name)),
+            ('lib.h', 'include/{}.h'.format(package_name)),
+            'wscript',
+        ]
+        dir_list = ['src/resources']
+        if args.javascript:
+            file_list.append(('lib.js', 'src/js/index.js'))
+
+        _copy_template(args.name, template_paths, ['package.json'], file_list, dir_list)
+
+        post_event("sdk_create_package", javascript=args.javascript)
+        print("Created new package {}".format(args.name))
+
+    @classmethod
+    def add_parser(cls, parser):
+        parser = super(NewPackageCommand, cls).add_parser(parser)
+        parser.add_argument("name", help="Name of the package you want to create")
+        parser.add_argument("--javascript", action="store_true", help="Include a js directory.")
         return parser

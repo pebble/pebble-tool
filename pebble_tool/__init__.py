@@ -16,7 +16,7 @@ from .commands.base import register_children
 from .commands import (install, logs, screenshot, timeline, emucontrol, ping, account, repl,
                        transcription_server, data_logging)
 from .commands.sdk import create, emulator
-from .commands.sdk.project import analyse_size, convert, debug
+from .commands.sdk.project import package, analyse_size, convert, debug
 from .exceptions import ToolError
 from .sdk import sdk_version
 from .util.analytics import wait_for_analytics, analytics_prompt
