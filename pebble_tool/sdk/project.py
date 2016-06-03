@@ -127,9 +127,6 @@ class NpmProject(PebbleProject):
         Raises an InvalidProjectException or an OutdatedProjectException if everything isn't quite right.
         """
 
-        if not os.path.isdir(os.path.join(project_dir, 'src')):
-            raise InvalidProjectException("This is not a project directory.")
-
         try:
             with open(os.path.join(project_dir, "package.json"), "r") as f:
                 try:
@@ -139,6 +136,8 @@ class NpmProject(PebbleProject):
                 if 'pebble' not in app_info:
                     raise InvalidProjectException("package.json doesn't have a 'pebble' key.")
         except IOError:
+            if not os.path.isdir(os.path.join(project_dir, 'src')):
+                raise InvalidProjectException("This is not a project directory.")
             raise InvalidProjectException("Couldn't open project info.")
 
     @staticmethod
