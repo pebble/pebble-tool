@@ -32,6 +32,12 @@ class PackageManager(SDKProjectCommand):
         uninstall_parser.add_argument('package', help="package to uninstall.")
         uninstall_parser.set_defaults(sub_func=cls.do_uninstall)
 
+        login_parser = subparsers.add_parser("login", help="Log in to npm, or create an npm account.")
+        login_parser.set_defaults(sub_func=cls.do_login)
+
+        publish_parser = subparsers.add_parser("publish", help="Publish package to npm.")
+        publish_parser.set_defaults(sub_func=cls.do_publish)
+
         return parser
 
     @classmethod
@@ -46,3 +52,18 @@ class PackageManager(SDKProjectCommand):
     @classmethod
     def do_uninstall(cls, args):
         npm.invoke_npm(["uninstall", "--save", "--ignore-scripts", args.package])
+
+    @classmethod
+    def do_login(cls, args):
+        print("You can either log in to or create an npm account here.")
+        try:
+            npm.invoke_npm(["login"])
+        except subprocess.CalledProcessError:
+            pass
+
+    @classmethod
+    def do_publish(cls, args):
+        try:
+            npm.invoke_npm(["publish"])
+        except subprocess.CalledProcessError:
+            pass
