@@ -70,35 +70,18 @@ class BaseCommand(with_metaclass(SelfRegisteringCommand)):
 
 
 class PebbleCommand(BaseCommand):
-    valid_connections = {'phone', 'qemu', 'cloudpebble', 'emulator', 'serial'}
+    connection_handlers = set()
+
+    @classmethod
+    def register_connection_handler(cls, impl):
+        cls.connection_handlers.add(impl)
 
     @classmethod
     def _shared_parser(cls):
         parser = argparse.ArgumentParser(add_help=False)
-        if len(cls.valid_connections) < 2 :
-            group = parser
-        else :
-            group = parser.add_mutually_exclusive_group()
-        if 'phone' in cls.valid_connections:
-            group.add_argument('--phone', metavar='phone_ip',
-                                help="When using the developer connection, your phone's IP or hostname. "
-                                     "Equivalent to PEBBLE_PHONE.")
-        if 'qemu' in cls.valid_connections:
-            group.add_argument('--qemu', nargs='?', const='localhost:12344', metavar='host',
-                                help="Use this option to connect directly to a QEMU instance. "
-                                     "Equivalent to PEBBLE_QEMU.")
-        if 'cloudpebble' in cls.valid_connections:
-            group.add_argument('--cloudpebble', action='store_true', help="Use this option to connect to your phone via"
-                                                                          " the CloudPebble connection. Equivalent to "
-                                                                          "PEBBLE_CLOUDPEBBLE.")
-        if 'emulator' in cls.valid_connections:
-            emu_group = group.add_argument_group()
-            emu_group.add_argument('--emulator', type=str, help="Launch an emulator. Equivalent to PEBBLE_EMULATOR.",
-                               choices=pebble_platforms)
-            emu_group.add_argument('--sdk', type=str, help="SDK version to launch. Defaults to the active SDK"
-                                                       " (currently {})".format(sdk_version()))
-        if 'serial' in cls.valid_connections:
-            group.add_argument('--serial', type=str, help="Connected directly, given a path to a serial device.")
+        group = parser.add_mutually_exclusive_group()
+        for handler_impl in cls.connection_handlers:
+            handler_impl.add_argument_handler(group)
         return super(PebbleCommand, cls)._shared_parser() + [parser]
 
     def __call__(self, args):
@@ -110,98 +93,16 @@ class PebbleCommand(BaseCommand):
 
     def _connect(self, args):
         self._set_debugging(args.v)
-        if getattr(args, 'phone', None):
-            return self._connect_phone(args.phone)
-        elif getattr(args, 'qemu', None):
-            return self._connect_qemu(args.qemu)
-        elif getattr(args, 'emulator', None):
-            return self._connect_emulator(args.emulator, args.sdk)
-        elif getattr(args, 'cloudpebble', None):
-            return self._connect_cloudpebble()
-        elif getattr(args, 'serial', None):
-            return self._connect_serial(args.serial)
-        else:
-            if 'phone' in self.valid_connections and 'PEBBLE_PHONE' in os.environ:
-                return self._connect_phone(os.environ['PEBBLE_PHONE'])
-            elif 'qemu' in self.valid_connections and 'PEBBLE_QEMU' in os.environ:
-                return self._connect_qemu(os.environ['PEBBLE_QEMU'])
-            elif 'cloudpebble' in self.valid_connections and os.environ.get('PEBBLE_CLOUDPEBBLE', False):
-                return self._connect_cloudpebble()
-            elif 'serial' in self.valid_connections and 'PEBBLE_BT_SERIAL' in os.environ:
-                return self._connect_serial(os.environ['PEBBLE_BT_SERIAL'])
-            elif 'emulator' in self.valid_connections:
-                running = []
-                emulator_platform = None
-                emulator_sdk = None
-                if 'PEBBLE_EMULATOR' in os.environ:
-                    emulator_platform = os.environ['PEBBLE_EMULATOR']
-                    if emulator_platform not in pebble_platforms:
-                        raise ToolError("PEBBLE_EMULATOR is set to '{}', which is not a valid platform "
-                                        "(pick from {})".format(emulator_platform, ', '.join(pebble_platforms)))
-                    emulator_sdk = os.environ.get('PEBBLE_EMULATOR_VERSION', sdk_version())
-                else:
-                    for platform, sdks in get_all_emulator_info().items():
-                        for sdk in sdks:
-                            if ManagedEmulatorTransport.is_emulator_alive(platform, sdk):
-                                running.append((platform, sdk))
-                    if len(running) == 1:
-                        emulator_platform, emulator_sdk = running[0]
-                    elif len(running) > 1:
-                        raise ToolError("Multiple emulators are running; you must specify which to use.")
-                if emulator_platform is not None:
-                    return self._connect_emulator(emulator_platform, emulator_sdk)
+        for handler_impl in self.connection_handlers:
+            if handler_impl.is_selected(args):
+                transport = handler_impl.get_transport(args)
+                connection = PebbleConnection(transport, **self._get_debug_args())
+                connection.connect()
+                connection.run_async()
+                handler_impl.post_connect(connection)
+                return connection
+
         raise ToolError("No pebble connection specified.")
-
-    def _connect_phone(self, phone):
-        parts = phone.split(':')
-        ip = parts[0]
-        if len(parts) == 2:
-            port = int(parts[1])
-        else:
-            port = 9000
-        connection = PebbleConnection(WebsocketTransport("ws://{}:{}/".format(ip, port)), **self._get_debug_args())
-        connection.connect()
-        connection.run_async()
-        return connection
-
-    def _connect_qemu(self, qemu):
-        parts = qemu.split(':')
-        ip = parts[0]
-        if not ip:
-            ip = '127.0.0.1'
-        if len(parts) == 2:
-            port = int(parts[1])
-        else:
-            port = 12344
-        connection = PebbleConnection(QemuTransport(ip, port), **self._get_debug_args())
-        connection.connect()
-        connection.run_async()
-        return connection
-
-    def _connect_emulator(self, platform, sdk):
-        connection = PebbleConnection(ManagedEmulatorTransport(platform, sdk), **self._get_debug_args())
-        connection.connect()
-        connection.run_async()
-        # Make sure the timezone is set usefully.
-        if connection.firmware_version.major >= 3:
-            ts = time.time()
-            tz_offset = -time.altzone if time.localtime(ts).tm_isdst and time.daylight else -time.timezone
-            tz_offset_minutes = tz_offset // 60
-            tz_name = "UTC%+d" % (tz_offset_minutes / 60)
-            connection.send_packet(TimeMessage(message=SetUTC(unix_time=ts, utc_offset=tz_offset_minutes, tz_name=tz_name)))
-        return connection
-
-    def _connect_cloudpebble(self):
-        connection = PebbleConnection(CloudPebbleTransport(), **self._get_debug_args())
-        connection.connect()
-        connection.run_async()
-        return connection
-
-    def _connect_serial(self, device):
-        connection = PebbleConnection(SerialTransport(device), **self._get_debug_args())
-        connection.connect()
-        connection.run_async()
-        return connection
 
     def _get_debug_args(self):
         args = {}
@@ -211,6 +112,167 @@ class PebbleCommand(BaseCommand):
             args['log_protocol_level'] = logging.DEBUG
         return args
 
+
+class SelfRegisteringTransportConfiguration(type):
+    def __init__(cls, name, bases, dct):
+        if hasattr(cls, 'name') and cls.name is not None:
+            PebbleCommand.register_connection_handler(cls)
+            super(SelfRegisteringTransportConfiguration, cls).__init__(name, bases, dct)
+
+
+class PebbleTransportConfiguration(with_metaclass(SelfRegisteringTransportConfiguration)):
+    transport_class = None
+    env_var = None
+    name = None
+
+    @classmethod
+    def _config_env_var(cls):
+        env_var_name = cls.env_var if cls.env_var else 'PEBBLE_%s' % cls.name.upper()
+        return os.environ.get(env_var_name)
+
+    @classmethod
+    def is_selected(cls, args):
+        return getattr(args, cls.name, None) or cls._config_env_var()
+
+    @classmethod
+    def _connect_args(cls, args):
+        arg_val = getattr(args, cls.name, None)
+        if arg_val:
+            return (arg_val,)
+
+        env_val = cls._config_env_var()
+        if env_val:
+            return (env_val,)
+
+    @classmethod
+    def get_transport(cls, args):
+        return cls.transport_class(*cls._connect_args(args))
+
+    @classmethod
+    def add_argument_handler(cls):
+        raise NotImplementedError
+
+    @classmethod
+    def post_connect(cls, connection):
+        pass
+
+
+class PebbleTransportSerial(PebbleTransportConfiguration):
+    transport_class = SerialTransport
+    env_var = 'PEBBLE_BT_SERIAL'
+    name = 'serial'
+
+    @classmethod
+    def add_argument_handler(cls, parser):
+        parser.add_argument('--serial', type=str, help="Connected directly, given a path to a serial device.")
+
+
+class PebbleTransportPhone(PebbleTransportConfiguration):
+    transport_class = WebsocketTransport
+    name = 'phone'
+
+    @classmethod
+    def _connect_args(cls, args):
+        phone, = super(PebbleTransportPhone, cls)._connect_args(args)
+        parts = phone.split(':')
+        ip = parts[0]
+        if len(parts) == 2:
+            port = int(parts[1])
+        else:
+            port = 9000
+
+        return ("ws://{}:{}/".format(ip, port),)
+
+    @classmethod
+    def add_argument_handler(cls, parser):
+        parser.add_argument('--phone', metavar='phone_ip',
+                            help="When using the developer connection, your phone's IP or hostname. "
+                                 "Equivalent to PEBBLE_PHONE.")
+
+
+class PebbleTransportQemu(PebbleTransportConfiguration):
+    transport_class = QemuTransport
+    name = 'qemu'
+
+    @classmethod
+    def _connect_args(cls, args):
+        phone, = super(PebbleTransportQemu, cls)._connect_args(args)
+        parts = phone.split(':')
+        ip = parts[0]
+        if len(parts) == 2:
+            port = int(parts[1])
+        else:
+            port = 12344
+
+        return (ip, port,)
+
+    @classmethod
+    def add_argument_handler(cls, parser):
+        parser.add_argument('--qemu', nargs='?', const='localhost:12344', metavar='host',
+                            help="Use this option to connect directly to a QEMU instance. "
+                                 "Equivalent to PEBBLE_QEMU.")
+
+
+class PebbleTransportCloudPebble(PebbleTransportConfiguration):
+    transport_class = CloudPebbleTransport
+    name = 'cloudpebble'
+
+    @classmethod
+    def _connect_args(cls, args):
+        return ()
+
+    @classmethod
+    def add_argument_handler(cls, parser):
+        parser.add_argument('--cloudpebble', action='store_true',
+                           help="Use this option to connect to your phone via"
+                                " the CloudPebble connection. Equivalent to "
+                                "PEBBLE_CLOUDPEBBLE.")
+
+
+class PebbleTransportEmulator(PebbleTransportConfiguration):
+    transport_class = ManagedEmulatorTransport
+    name = 'emulator'
+
+    @classmethod
+    def _connect_args(cls, args):
+        running = []
+        emulator_platform = getattr(args, 'emulator', None)
+        emulator_sdk = getattr(args, 'sdk', None)
+        if 'PEBBLE_EMULATOR' in os.environ:
+            emulator_platform = os.environ['PEBBLE_EMULATOR']
+            if emulator_platform not in pebble_platforms:
+                raise ToolError("PEBBLE_EMULATOR is set to '{}', which is not a valid platform "
+                                "(pick from {})".format(emulator_platform, ', '.join(pebble_platforms)))
+            emulator_sdk = os.environ.get('PEBBLE_EMULATOR_VERSION', sdk_version())
+        else:
+            for platform, sdks in get_all_emulator_info().items():
+                for sdk in sdks:
+                    if ManagedEmulatorTransport.is_emulator_alive(platform, sdk):
+                        running.append((platform, sdk))
+            if len(running) == 1:
+                emulator_platform, emulator_sdk = running[0]
+            elif len(running) > 1:
+                raise ToolError("Multiple emulators are running; you must specify which to use.")
+
+        return (emulator_platform, emulator_sdk)
+
+    @classmethod
+    def post_connect(cls, connection):
+        # Make sure the timezone is set usefully.
+        if connection.firmware_version.major >= 3:
+            ts = time.time()
+            tz_offset = -time.altzone if time.localtime(ts).tm_isdst and time.daylight else -time.timezone
+            tz_offset_minutes = tz_offset // 60
+            tz_name = "UTC%+d" % (tz_offset_minutes / 60)
+            connection.send_packet(TimeMessage(message=SetUTC(unix_time=ts, utc_offset=tz_offset_minutes, tz_name=tz_name)))
+
+    @classmethod
+    def add_argument_handler(cls, parser):
+        emu_group = parser.add_argument_group()
+        emu_group.add_argument('--emulator', type=str, help="Launch an emulator. Equivalent to PEBBLE_EMULATOR.",
+                           choices=pebble_platforms)
+        emu_group.add_argument('--sdk', type=str, help="SDK version to launch. Defaults to the active SDK"
+                                                   " (currently {})".format(sdk_version()))
 
 def register_children(parser):
     subparsers = parser.add_subparsers(title="command")
