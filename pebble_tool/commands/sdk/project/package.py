@@ -5,6 +5,7 @@ import subprocess
 
 from . import SDKProjectCommand
 from pebble_tool.exceptions import ToolError
+from pebble_tool.sdk.project import NpmProject
 import pebble_tool.util.npm as npm
 
 __author__ = "katharine"
@@ -17,6 +18,9 @@ class PackageManager(SDKProjectCommand):
 
     def __call__(self, args):
         super(PackageManager, self).__call__(args)
+        if not isinstance(self.project, NpmProject):
+            raise ToolError("Package management is only available on projects using package.json. "
+                            "Try pebble convert-project.")
         args.sub_func(args)
 
     @classmethod
