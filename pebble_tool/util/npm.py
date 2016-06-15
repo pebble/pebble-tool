@@ -26,6 +26,8 @@ def sanity_check():
     if not os.path.exists('node_modules'):
         return
     for d in os.listdir('node_modules'):
+        if not os.path.isdir(d):
+            continue
         if 'node_modules' in os.listdir(os.path.join('node_modules', d)):
             raise ToolError("Conflicting npm dependency in {}: {}. Please resolve before continuing."
                             .format(d, os.listdir(os.path.join('node_modules', d, 'node_modules'))[0]))
