@@ -198,6 +198,11 @@ class ManagedEmulatorTransport(WebsocketTransport):
         ]
 
         platform_args = {
+            'diorite': [
+                '-machine', 'pebble-silk-bb',
+                '-cpu', 'cortex-m4',
+                '-mtdblock', qemu_spi_flash,
+            ],
             'chalk': [
                 '-machine', 'pebble-s4-bb',
                 '-cpu', 'cortex-m4',
@@ -249,8 +254,7 @@ class ManagedEmulatorTransport(WebsocketTransport):
                 # Ignore "Interrupted system call"
                 if e.errno != errno.EINTR:
                     raise
-            # PBL-21275: we'll add less hacky solutions for this to the firmware.
-            if b"<SDK Home>" in received or b"<Launcher>" in received:
+            if b"<SDK Home>" in received or b"<Launcher>" in received or b"Ready for communication" in received:
                 break
         s.close()
         post_event("qemu_launched", success=True)

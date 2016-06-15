@@ -2,13 +2,10 @@ from __future__ import absolute_import, print_function
 __author__ = 'katharine'
 
 import os
-import subprocess
 
 from pebble_tool.exceptions import MissingSDK
 from pebble_tool.util import get_persist_dir
-from .manager import SDKManager
-
-pebble_platforms = ('aplite', 'basalt', 'chalk')
+from .manager import SDKManager, pebble_platforms
 
 SDK_VERSION = '3'
 

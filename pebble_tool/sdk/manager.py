@@ -19,7 +19,7 @@ from pebble_tool.util import get_persist_dir
 from pebble_tool.util.config import config
 from pebble_tool.util.versions import version_to_key
 
-pebble_platforms = ('aplite', 'basalt', 'chalk')
+pebble_platforms = ('aplite', 'basalt', 'chalk', 'diorite')
 
 
 class SDKManager(object):
