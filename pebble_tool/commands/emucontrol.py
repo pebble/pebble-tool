@@ -277,3 +277,18 @@ class EmuTimeFormatCommand(PebbleCommand):
         parser.add_argument('--format', choices=['12h', '24h'],
                             help="Set the time format of the emulator")
         return parser
+
+
+class EmuSetTimelinePeekCommand(PebbleCommand):
+    command = 'emu-set-timeline-peek'
+    valid_connections = {'qemu', 'emulator'}
+
+    def __call__(self, args):
+        super(EmuSetTimelinePeekCommand, self).__call__(args)
+        peek = (args.state == 'on')
+        send_data_to_qemu(self.pebble.transport, QemuTimelinePeek(enabled=peek))
+
+    @classmethod
+    def add_parser(cls, parser):
+        parser = super(EmuSetTimelinePeekCommand, cls).add_parser(parser)
+        parser.add_argument('state', choices=['on', 'off'], help="Set whether a peek is visible.")
