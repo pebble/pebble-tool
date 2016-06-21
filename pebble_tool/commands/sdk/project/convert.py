@@ -35,6 +35,9 @@ class PblProjectConverter(SDKProjectCommand):
             'name': self.project.short_name,
             'author': self.project.company_name,
             'version': self.project.version + '.0',
+            'private': True,
+            'keywords': ['pebble-app'],
+            'dependencies': {},
             'pebble': {
                 'sdkVersion': self.project.sdk_version,
                 'targetPlatforms': self.project.target_platforms,

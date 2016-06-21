@@ -23,6 +23,7 @@ class BuildCommand(SDKProjectCommand):
             post_event('app_build_with_npm_deps')
             try:
                 npm.invoke_npm(["install"])
+                npm.invoke_npm(["dedupe"])
             except subprocess.CalledProcessError:
                 post_event("app_build_failed_npm")
                 raise BuildError("npm failed.")

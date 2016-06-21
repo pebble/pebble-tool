@@ -18,6 +18,7 @@ def _copy_template(name, directory_list, appinfo_list, file_list, create_dir_lis
         project_path = name
         project_name = os.path.split(project_path)[1]
         project_root = os.path.join(os.getcwd(), project_path)
+        os.mkdir(project_path)
     except OSError as e:
         if e.errno == errno.EEXIST:
             raise ToolError("A directory called '{}' already exists.".format(project_name))
