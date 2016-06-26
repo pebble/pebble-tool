@@ -59,10 +59,11 @@ class PebbleLogPrinter(object):
 
     def _print(self, packet, message):
         colour = self._get_colour(packet)
+        message_string = message.encode('utf-8')
         if colour:
-            print(colour + message.encode('utf-8') + Style.RESET_ALL)
-        else:
-            print(message.encode('utf-8'))
+            message_string = colour + message_string + Style.RESET_ALL
+        sys.stdout.write(message_string + '\n')
+        sys.stdout.flush()
 
     def _get_colour(self, packet):
         colour = None
