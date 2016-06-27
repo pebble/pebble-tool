@@ -8,6 +8,7 @@ import os
 import sys
 import threading
 import time
+import requests
 
 from pebble_tool.version import __version__
 from pebble_tool.sdk import sdk_manager
@@ -30,8 +31,12 @@ class UpdateChecker(threading.Thread):
         last_check = config.get('update-checks', {}).get(self.component, {})
         if last_check.get('timestamp', 0) < time.time() - 86400:  # minus one day
             logger.debug("Haven't looked for updates lately; checking...")
-            latest = sdk_manager.request("/v1/files/{}/latest?channel={}"
-                                  .format(self.component, sdk_manager.get_channel()))
+            try:
+                latest = sdk_manager.request("/v1/files/{}/latest?channel={}"
+                                             .format(self.component, sdk_manager.get_channel()))
+            except requests.RequestException as e:
+                logger.info("Update check failed: %s", e)
+                return
             if not 200 <= latest.status_code < 400:
                 logger.info("Update check failed: %s (%s)", latest.status_code, latest.reason)
                 return
