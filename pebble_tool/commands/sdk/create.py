@@ -86,7 +86,7 @@ class NewProjectCommand(SDKCommand):
         if args.javascript:
             file_list.extend([('app.js', 'src/js/app.js'), ('pebble-js-app.js', 'src/js/pebble-js-app.js')])
         if args.worker:
-            file_list.append(('worker.c', 'worker/{}_worker.c'.format(project_name)))
+            file_list.append(('worker.c', 'worker_src/{}_worker.c'.format(project_name)))
 
         _copy_template(args.name, template_paths, ['package.json', 'appinfo.json'], file_list, ['resources'])
 
