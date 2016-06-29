@@ -87,7 +87,7 @@ class PebbleCommand(BaseCommand):
     @classmethod
     def valid_connection_handlers(cls):
         valid_connections = getattr(cls, 'valid_connections', None)
-        if valid_connections:
+        if not valid_connections:
             return cls.connection_handlers
 
         return set([handler for handler in cls.connection_handlers if handler.name in valid_connections])
