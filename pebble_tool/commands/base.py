@@ -80,9 +80,17 @@ class PebbleCommand(BaseCommand):
     def _shared_parser(cls):
         parser = argparse.ArgumentParser(add_help=False)
         group = parser.add_mutually_exclusive_group()
-        for handler_impl in cls.connection_handlers:
+        for handler_impl in cls.valid_connection_handlers():
             handler_impl.add_argument_handler(group)
         return super(PebbleCommand, cls)._shared_parser() + [parser]
+
+    @classmethod
+    def valid_connection_handlers(cls):
+        valid_connections = getattr(cls, 'valid_connections', None)
+        if valid_connections:
+            return cls.connection_handlers
+
+        return set([handler for handler in cls.connection_handlers if handler.name in valid_connections])
 
     def __call__(self, args):
         super(PebbleCommand, self).__call__(args)
@@ -93,7 +101,7 @@ class PebbleCommand(BaseCommand):
 
     def _connect(self, args):
         self._set_debugging(args.v)
-        for handler_impl in self.connection_handlers:
+        for handler_impl in self.valid_connection_handlers():
             if handler_impl.is_selected(args):
                 transport = handler_impl.get_transport(args)
                 connection = PebbleConnection(transport, **self._get_debug_args())
