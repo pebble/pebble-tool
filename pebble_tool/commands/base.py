@@ -103,14 +103,20 @@ class PebbleCommand(BaseCommand):
         self._set_debugging(args.v)
         for handler_impl in self.valid_connection_handlers():
             if handler_impl.is_selected(args):
-                transport = handler_impl.get_transport(args)
-                connection = PebbleConnection(transport, **self._get_debug_args())
-                connection.connect()
-                connection.run_async()
-                handler_impl.post_connect(connection)
-                return connection
+                break
+        else:
+            # No selected transport, fallback to a running emulator if available
+            if PebbleTransportEmulator.get_running_emulators():
+                handler_impl = PebbleTransportEmulator
+            else:
+                raise ToolError("No pebble connection specified.")
 
-        raise ToolError("No pebble connection specified.")
+        transport = handler_impl.get_transport(args)
+        connection = PebbleConnection(transport, **self._get_debug_args())
+        connection.connect()
+        connection.run_async()
+        handler_impl.post_connect(connection)
+        return connection
 
     def _get_debug_args(self):
         args = {}
@@ -242,8 +248,16 @@ class PebbleTransportEmulator(PebbleTransportConfiguration):
     name = 'emulator'
 
     @classmethod
-    def _connect_args(cls, args):
+    def get_running_emulators(cls):
         running = []
+        for platform, sdks in get_all_emulator_info().items():
+            for sdk in sdks:
+                if ManagedEmulatorTransport.is_emulator_alive(platform, sdk):
+                    running.append((platform, sdk))
+        return running
+
+    @classmethod
+    def _connect_args(cls, args):
         emulator_platform = getattr(args, 'emulator', None)
         emulator_sdk = getattr(args, 'sdk', None)
         if 'PEBBLE_EMULATOR' in os.environ:
@@ -253,10 +267,7 @@ class PebbleTransportEmulator(PebbleTransportConfiguration):
                                 "(pick from {})".format(emulator_platform, ', '.join(pebble_platforms)))
             emulator_sdk = os.environ.get('PEBBLE_EMULATOR_VERSION', sdk_version())
         else:
-            for platform, sdks in get_all_emulator_info().items():
-                for sdk in sdks:
-                    if ManagedEmulatorTransport.is_emulator_alive(platform, sdk):
-                        running.append((platform, sdk))
+            running = cls.get_running_emulators()
             if len(running) == 1:
                 emulator_platform, emulator_sdk = running[0]
             elif len(running) > 1:
