@@ -32,7 +32,7 @@ class PblProjectConverter(SDKProjectCommand):
 
     def _convert_to_npm(self):
         new_info = {
-            'name': self.project.short_name,
+            'name': self.project.short_name.replace(' ',''),
             'author': self.project.company_name,
             'version': self.project.version + '.0',
             'private': True,
