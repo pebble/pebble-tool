@@ -32,6 +32,9 @@ class SDKProjectCommand(SDKCommand):
         logger.debug("waf command: %s", subprocess.list2cmdline(command))
         env = os.environ.copy()
         env['PYTHONHOME'] = virtualenv
+        if os.path.isdir('node_modules'):
+            env['PYTHONPATH'] = '' if 'PYTHONPATH' not in env else env['PYTHONPATH'] + ":"
+            env['PYTHONPATH'] += ':'.join([os.path.join('node_modules', module) for module in os.listdir('node_modules')])
         if extra_env is not None:
             env.update(extra_env)
         subprocess.check_call(command, env=env)
