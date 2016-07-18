@@ -260,7 +260,9 @@ class PebbleTransportEmulator(PebbleTransportConfiguration):
     def _connect_args(cls, args):
         emulator_platform = getattr(args, 'emulator', None)
         emulator_sdk = getattr(args, 'sdk', None)
-        if 'PEBBLE_EMULATOR' in os.environ:
+        if emulator_platform and emulator_sdk:
+            return emulator_platform, emulator_sdk
+        elif 'PEBBLE_EMULATOR' in os.environ:
             emulator_platform = os.environ['PEBBLE_EMULATOR']
             if emulator_platform not in pebble_platforms:
                 raise ToolError("PEBBLE_EMULATOR is set to '{}', which is not a valid platform "
