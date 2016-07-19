@@ -78,9 +78,10 @@ def _handle_tool_update(version, release_notes=None):
     if release_notes is not None:
         _print(release_notes)
     if 'PEBBLE_IS_HOMEBREW' in os.environ:
-        _print("Run `brew update && brew upgrade pebble-sdk` to get it.")
+        flag = ' --devel' if sdk_manager.get_channel() == 'beta' else ''
+        _print("Run `brew update && brew upgrade{} pebble-sdk` to get it.".format(flag))
     else:
-        _print("Head to https://developer.getpebble.com/sdk/beta/ to get it.")
+        _print("Head to https://developer.getpebble.com/sdk/ to get it.")
 
 
 def _get_platform():
