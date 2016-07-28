@@ -260,7 +260,7 @@ class PebbleTransportEmulator(PebbleTransportConfiguration):
     def _connect_args(cls, args):
         emulator_platform = getattr(args, 'emulator', None)
         emulator_sdk = getattr(args, 'sdk', None)
-        if emulator_platform and emulator_sdk:
+        if emulator_platform:
             return emulator_platform, emulator_sdk
         elif 'PEBBLE_EMULATOR' in os.environ:
             emulator_platform = os.environ['PEBBLE_EMULATOR']
