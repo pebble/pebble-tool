@@ -73,30 +73,45 @@ class NewProjectCommand(SDKCommand):
         project_name = os.path.split(project_path)[1]
         sdk2 = self.sdk == "2.9" or (self.sdk is None and sdk_version() == "2.9")
 
-        template_paths = [
-            os.path.join(self.get_sdk_path(), 'pebble', 'common', 'templates', 'app'),
-            os.path.join(self.get_sdk_path(), 'pebble', 'common', 'templates'),
-            os.path.join(os.path.dirname(__file__), '..', '..', 'sdk', 'templates'),
-        ]
-        file_list = [
-            ('gitignore', '.gitignore'),
-            ('simple.c' if args.simple else 'main.c', 'src/{}.c'.format(project_name)),
-            ('wscript_sdk2' if sdk2 else 'wscript', 'wscript')
-        ]
-        if args.javascript:
-            file_list.extend([('app.js', 'src/js/app.js'), ('pebble-js-app.js', 'src/js/pebble-js-app.js')])
-        if args.worker:
-            file_list.append(('worker.c', 'worker_src/{}_worker.c'.format(project_name)))
+        file_list = [('gitignore', '.gitignore')]
+        if args.rocky:
+            if sdk2:
+                raise ToolError("--rocky is not compatible with SDK 2.9")
+            if args.c or args.simple or args.worker:
+                raise ValueError("--rocky is incompatible with --c, --simple, and --worker")
+            template_paths = [os.path.join(self.get_sdk_path(), 'pebble', 'common', 'templates', 'rocky')]
+            file_list.extend([
+                ('app.js', 'src/pkjs/app.js'),
+                ('index.js', 'src/rocky/index.js'),
+                ('wscript', 'wscript')
+            ])
+        else:
+            template_paths = [
+                os.path.join(self.get_sdk_path(), 'pebble', 'common', 'templates', 'app'),
+                os.path.join(self.get_sdk_path(), 'pebble', 'common', 'templates'),
+                os.path.join(os.path.dirname(__file__), '..', '..', 'sdk', 'templates')
+            ]
+            file_list.extend([
+                ('simple.c' if args.simple else 'main.c', 'src/c/{}.c'.format(project_name)),
+                ('wscript_sdk2' if sdk2 else 'wscript', 'wscript')
+            ])
+
+            if args.javascript:
+                file_list.extend([('app.js', 'src/js/app.js'), ('pebble-js-app.js', 'src/js/pebble-js-app.js')])
+            if args.worker:
+                file_list.append(('worker.c', 'worker_src/{}_worker.c'.format(project_name)))
 
         _copy_template(args.name, template_paths, ['package.json', 'appinfo.json'], file_list, ['resources'])
 
-        post_event("sdk_create_project", javascript=args.javascript, worker=args.worker)
+        post_event("sdk_create_project", javascript=args.javascript or args.rocky, worker=args.worker, rocky=args.rocky)
         print("Created new project {}".format(args.name))
 
     @classmethod
     def add_parser(cls, parser):
         parser = super(NewProjectCommand, cls).add_parser(parser)
         parser.add_argument("name", help="Name of the project you want to create")
+        parser.add_argument("--c", action="store_true", help="Create a C project.")
+        parser.add_argument("--rocky", action="store_true", help="Create a Rocky.js project.")
         parser.add_argument("--simple", action="store_true", help="Create a minimal C file.")
         parser.add_argument("--javascript", action="store_true", help="Generate a JavaScript file.")
         parser.add_argument("--worker", action="store_true", help="Generate a background worker.")
