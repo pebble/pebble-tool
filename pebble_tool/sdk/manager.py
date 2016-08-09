@@ -115,6 +115,14 @@ class SDKManager(object):
             subprocess.check_call([os.path.join(virtualenv_path, "bin", "python"), "-m", "pip", "install", "-r",
                                    os.path.join(path, "sdk-core", "requirements.txt")],
                                   env={'PYTHONHOME': virtualenv_path})
+            package_json = os.path.join(path, "sdk-core", "package.json")
+            if os.path.exists(package_json) and self._js_prompt():
+                print("Installing JS dependencies... (this may take awhile)")
+                node_modules_folder = os.path.join(path, "node_modules")
+                os.mkdir(node_modules_folder)
+                shutil.copy2(package_json, os.path.join(path, "package.json"))
+                subprocess.check_call(["npm", "install"], cwd=path)
+
             self.set_current_sdk(sdk_info['version'])
             print("Done.")
         except Exception:
@@ -140,6 +148,17 @@ class SDKManager(object):
             raise SDKInstallError("You need to update the pebble tool before installing this SDK.")
         self._license_prompt()
         self.install_from_url(sdk_info['url'])
+
+    def _js_prompt(self):
+        prompt = """To build Rocky.js projects, you will need to install a number of Node.js dependencies."""
+        print(prompt)
+        while True:
+            try:
+                result = strtobool(raw_input("Do you want to install these dependencies now? (y/n) "))
+            except ValueError:
+                pass
+            else:
+                return result
 
     def _license_prompt(self):
         prompt = """To use the Pebble SDK, you must agree to the following:
@@ -201,6 +220,10 @@ https://developer.getpebble.com/legal/sdk-license
         sdk_path = os.path.join(build_path, 'sdk')
         os.mkdir(dest_path)
         env_path = os.path.join(dest_path, '.env')
+        if os.path.exists(os.path.join(sdk_path, 'package.json')):
+            shutil.copy2(os.path.join(sdk_path, 'package.json'), os.path.join(dest_path, 'package.json'))
+            node_modules_path = os.path.join(dest_path, 'node_modules')
+            os.mkdir(node_modules_path)
         dest_path = os.path.join(dest_path, 'sdk-core')
         os.mkdir(os.path.join(dest_path))
         pebble_path = os.path.join(dest_path, 'pebble')
@@ -246,6 +269,9 @@ subprocess.call([sys.executable, {}] + sys.argv[1:])
         subprocess.check_call([os.path.join(env_path, "bin", "python"), "-m", "pip", "install", "-r",
                                os.path.join(path, "requirements-{}.txt".format(platform))],
                               env={'PYTHONHOME': env_path, 'PATH': os.environ['PATH']})
+        if os.path.exists(os.path.join(dest_path, '..', 'node_modules')):
+            print("Installing JS dependencies...")
+            subprocess.check_call(['npm', 'install'], cwd=os.path.join(dest_path, '..'))
 
         self.set_current_sdk('tintin')
         print("Generated an SDK linked to {}.".format(path))
@@ -275,7 +301,6 @@ subprocess.call([sys.executable, {}] + sys.argv[1:])
         if not os.path.exists(path):
             raise MissingSDK("SDK {} is not installed.".format(version))
         return path
-
 
     @staticmethod
     def parse_version(version_string):
