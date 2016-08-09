@@ -77,8 +77,8 @@ class NewProjectCommand(SDKCommand):
         if args.rocky:
             if sdk2:
                 raise ToolError("--rocky is not compatible with SDK 2.9")
-            if args.c or args.simple or args.worker:
-                raise ValueError("--rocky is incompatible with --c, --simple, and --worker")
+            if args.simple or args.worker:
+                raise ToolError("--rocky is incompatible with --simple and --worker")
             template_paths = [os.path.join(self.get_sdk_path(), 'pebble', 'common', 'templates', 'rocky')]
             file_list.extend([
                 ('app.js', 'src/pkjs/app.js'),
@@ -110,11 +110,14 @@ class NewProjectCommand(SDKCommand):
     def add_parser(cls, parser):
         parser = super(NewProjectCommand, cls).add_parser(parser)
         parser.add_argument("name", help="Name of the project you want to create")
-        parser.add_argument("--c", action="store_true", help="Create a C project.")
-        parser.add_argument("--rocky", action="store_true", help="Create a Rocky.js project.")
-        parser.add_argument("--simple", action="store_true", help="Create a minimal C file.")
-        parser.add_argument("--javascript", action="store_true", help="Generate a JavaScript file.")
-        parser.add_argument("--worker", action="store_true", help="Generate a background worker.")
+        type_group = parser.add_argument_group("project type")
+        exclusive_type_group = type_group.add_mutually_exclusive_group()
+        exclusive_type_group.add_argument("--rocky", action="store_true", help="Create a Rocky.js project.")
+        exclusive_type_group.add_argument("--c", action="store_true", help="Create a C project.")
+        c_group = parser.add_argument_group('C-specific arguments')
+        c_group.add_argument("--simple", action="store_true", help="Create a minimal C file.")
+        c_group.add_argument("--javascript", action="store_true", help="Generate a JavaScript file.")
+        c_group.add_argument("--worker", action="store_true", help="Generate a background worker.")
         return parser
 
 
