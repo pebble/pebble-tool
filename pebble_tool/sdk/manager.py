@@ -116,7 +116,7 @@ class SDKManager(object):
                                    os.path.join(path, "sdk-core", "requirements.txt")],
                                   env={'PYTHONHOME': virtualenv_path})
             package_json = os.path.join(path, "sdk-core", "package.json")
-            if os.path.exists(package_json) and self._js_prompt():
+            if os.path.exists(package_json):
                 print("Installing JS dependencies... (this may take awhile)")
                 node_modules_folder = os.path.join(path, "node_modules")
                 os.mkdir(node_modules_folder)
@@ -148,17 +148,6 @@ class SDKManager(object):
             raise SDKInstallError("You need to update the pebble tool before installing this SDK.")
         self._license_prompt()
         self.install_from_url(sdk_info['url'])
-
-    def _js_prompt(self):
-        prompt = """To build Rocky.js projects, you will need to install a number of Node.js dependencies."""
-        print(prompt)
-        while True:
-            try:
-                result = strtobool(raw_input("Do you want to install these dependencies now? (y/n) "))
-            except ValueError:
-                pass
-            else:
-                return result
 
     def _license_prompt(self):
         prompt = """To use the Pebble SDK, you must agree to the following:
