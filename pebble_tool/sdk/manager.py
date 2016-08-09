@@ -270,7 +270,7 @@ subprocess.call([sys.executable, {}] + sys.argv[1:])
                                os.path.join(path, "requirements-{}.txt".format(platform))],
                               env={'PYTHONHOME': env_path, 'PATH': os.environ['PATH']})
         if os.path.exists(os.path.join(dest_path, '..', 'node_modules')):
-            print("Installing JS dependencies...")
+            print("Installing JS dependencies... (this may take awhile)")
             subprocess.check_call(['npm', 'install'], cwd=os.path.join(dest_path, '..'))
 
         self.set_current_sdk('tintin')
