@@ -101,7 +101,7 @@ class PebbleLogPrinter(object):
 
     def handle_phone_log(self, packet):
         assert isinstance(packet, WebSocketPhoneAppLog)
-        self._print(packet, u"[{}] javascript> {}".format(datetime.now().strftime("%H:%M:%S"),
+        self._print(packet, u"[{}] pkjs> {}".format(datetime.now().strftime("%H:%M:%S"),
                                                          packet.payload))
 
     def handle_connection(self, packet):
