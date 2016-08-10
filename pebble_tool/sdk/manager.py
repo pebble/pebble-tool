@@ -117,11 +117,11 @@ class SDKManager(object):
                                   env={'PYTHONHOME': virtualenv_path})
             package_json = os.path.join(path, "sdk-core", "package.json")
             if os.path.exists(package_json):
-                print("Installing JS dependencies... (this may take awhile)")
+                print("Installing JS dependencies... (this may take a while)")
                 node_modules_folder = os.path.join(path, "node_modules")
                 os.mkdir(node_modules_folder)
                 shutil.copy2(package_json, os.path.join(path, "package.json"))
-                subprocess.check_call(["npm", "install"], cwd=path)
+                subprocess.check_call(["npm", "install", "--silent"], cwd=path)
 
             self.set_current_sdk(sdk_info['version'])
             print("Done.")
@@ -259,7 +259,7 @@ subprocess.call([sys.executable, {}] + sys.argv[1:])
                                os.path.join(path, "requirements-{}.txt".format(platform))],
                               env={'PYTHONHOME': env_path, 'PATH': os.environ['PATH']})
         if os.path.exists(os.path.join(dest_path, '..', 'node_modules')):
-            print("Installing JS dependencies... (this may take awhile)")
+            print("Installing JS dependencies... (this may take a while)")
             subprocess.check_call(['npm', 'install'], cwd=os.path.join(dest_path, '..'))
 
         self.set_current_sdk('tintin')
