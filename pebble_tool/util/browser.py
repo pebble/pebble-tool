@@ -136,7 +136,7 @@ class BrowserController(object):
     @classmethod
     def _get_ip(cls):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(('10.255.255.255', 0))
+        s.connect(('10.255.255.255', 1))
         addr, port = s.getsockname()
         s.close()
         return addr
