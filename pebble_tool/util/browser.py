@@ -10,6 +10,7 @@ import time
 from six.moves.urllib import parse as urlparse
 import webbrowser
 
+from pebble_tool.exceptions import ToolError
 from .phone_sensor import SENSOR_PAGE_HTML
 
 
@@ -106,12 +107,17 @@ class BrowserController(object):
                                                                self.requestline, code, size))
 
         server = BaseHTTPServer.HTTPServer(('', self.port), SensorPageHandler)
-        url = "http://{}:{}".format(gethostbyname(gethostname()), server.server_port)
-        url_code = pyqrcode.create(url)
-        print(url_code.terminal(quiet_zone=1))
-        print("=======================================================================================================")
-        print("Please scan the QR code or enter the following URL in your mobile browser:\n{}".format(url))
-        print("=======================================================================================================")
+        try:
+            url = "http://{}:{}".format(self._get_ip(), server.server_port)
+            url_code = pyqrcode.create(url)
+            print(url_code.terminal(quiet_zone=1))
+            print("===================================================================================================")
+            print("Please scan the QR code or enter the following URL in your mobile browser:\n{}".format(url))
+            print("===================================================================================================")
+        except socket.error:
+            print("Unable to determine local IP address. Please browse to port {} on this machine from your mobile "
+                  "browser.".format(server.server_port))
+
         print("\nUse Ctrl-C to stop sending sensor data to the emulator.\n")
         try:
             server.serve_forever()
@@ -126,3 +132,11 @@ class BrowserController(object):
         addr, port = s.getsockname()
         s.close()
         return port
+
+    @classmethod
+    def _get_ip(cls):
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(('10.255.255.255', 0))
+        addr, port = s.getsockname()
+        s.close()
+        return addr
