@@ -5,12 +5,10 @@ import logging
 import os
 import pyqrcode
 import socket
-from socket import gethostname, gethostbyname
 import time
 from six.moves.urllib import parse as urlparse
 import webbrowser
 
-from pebble_tool.exceptions import ToolError
 from .phone_sensor import SENSOR_PAGE_HTML
 
 
@@ -59,6 +57,7 @@ class BrowserController(object):
         return urlparse.urlunparse((parsed.scheme, parsed.netloc, parsed.path, parsed.params, query, parsed.fragment))
 
     def serve_sensor_page(self, pypkjs_port, port=None):
+        controller = self
         self.port = port or self._choose_port()
 
         class SensorPageHandler(BaseHTTPServer.BaseHTTPRequestHandler):
@@ -85,7 +84,7 @@ class BrowserController(object):
                     self.send_response(200)
                     self.send_header('Content-type', 'text/html')
                     self.end_headers()
-                    self.wfile.write(SENSOR_PAGE_HTML.format(websocket_host="'{}'".format(gethostbyname(gethostname())),
+                    self.wfile.write(SENSOR_PAGE_HTML.format(websocket_host="'{}'".format(controller._get_ip()),
                                                              websocket_port="'{}'".format(pypkjs_port)))
                 elif file_path in self.PERMITTED_PATHS:
                     try:
