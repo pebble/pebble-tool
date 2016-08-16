@@ -98,7 +98,7 @@ class NewProjectCommand(SDKCommand):
 
             if args.javascript:
                 file_list.extend([
-                    ('app.js', 'src/pkjs/index.js'),
+                    ('app.js', 'src/js/app.js'),
                     ('pebble-js-app.js', 'src/js/pebble-js-app.js')])
             if args.worker:
                 file_list.append(('worker.c', 'worker_src/c/{}_worker.c'.format(project_name)))
@@ -144,7 +144,7 @@ class NewPackageCommand(SDKCommand):
         ]
         dir_list = ['src/resources']
         if args.javascript:
-            file_list.append(('lib.js', 'src/pkjs/index.js'))
+            file_list.append(('lib.js', 'src/js/index.js'))
 
         _copy_template(args.name, template_paths, ['package.json'], file_list, dir_list)
 
