@@ -200,6 +200,7 @@ https://developer.getpebble.com/legal/sdk-license
         return config.get('sdk-channel', '')
 
     def make_tintin_sdk(self, path):
+        path = os.path.realpath(os.path.expanduser(path))
         dest_path = os.path.join(self.sdk_dir, 'tintin')
         if not os.path.exists(os.path.join(path, 'wscript')):
             raise SDKInstallError("No tintin found at {}".format(path))
