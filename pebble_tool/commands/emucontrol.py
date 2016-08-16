@@ -280,7 +280,7 @@ class EmuTimeFormatCommand(PebbleCommand):
 
 
 class EmuSetTimelinePeekCommand(PebbleCommand):
-    command = 'emu-set-timeline-peek'
+    command = 'emu-set-timeline-quick-view'
     valid_connections = {'qemu', 'emulator'}
 
     def __call__(self, args):
@@ -291,4 +291,4 @@ class EmuSetTimelinePeekCommand(PebbleCommand):
     @classmethod
     def add_parser(cls, parser):
         parser = super(EmuSetTimelinePeekCommand, cls).add_parser(parser)
-        parser.add_argument('state', choices=['on', 'off'], help="Set whether a peek is visible.")
+        parser.add_argument('state', choices=['on', 'off'], help="Set whether a timeline quick view is visible.")
