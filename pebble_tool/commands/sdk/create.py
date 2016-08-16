@@ -81,7 +81,7 @@ class NewProjectCommand(SDKCommand):
                 raise ToolError("--rocky is incompatible with --simple and --worker")
             template_paths = [os.path.join(self.get_sdk_path(), 'pebble', 'common', 'templates', 'rocky')]
             file_list.extend([
-                ('app.js', 'src/pkjs/app.js'),
+                ('app.js', 'src/pkjs/index.js'),
                 ('index.js', 'src/rocky/index.js'),
                 ('wscript', 'wscript')
             ])
@@ -97,7 +97,9 @@ class NewProjectCommand(SDKCommand):
             ])
 
             if args.javascript:
-                file_list.extend([('app.js', 'src/js/app.js'), ('pebble-js-app.js', 'src/js/pebble-js-app.js')])
+                file_list.extend([
+                    ('app.js', 'src/js/app.js'),
+                    ('pebble-js-app.js', 'src/js/pebble-js-app.js')])
             if args.worker:
                 file_list.append(('worker.c', 'worker_src/c/{}_worker.c'.format(project_name)))
 
