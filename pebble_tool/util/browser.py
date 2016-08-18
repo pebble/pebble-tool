@@ -5,7 +5,6 @@ import logging
 import os
 import pyqrcode
 import socket
-from socket import gethostname, gethostbyname
 import time
 from six.moves.urllib import parse as urlparse
 import webbrowser
@@ -58,6 +57,7 @@ class BrowserController(object):
         return urlparse.urlunparse((parsed.scheme, parsed.netloc, parsed.path, parsed.params, query, parsed.fragment))
 
     def serve_sensor_page(self, pypkjs_port, port=None):
+        controller = self
         self.port = port or self._choose_port()
 
         class SensorPageHandler(BaseHTTPServer.BaseHTTPRequestHandler):
@@ -84,7 +84,7 @@ class BrowserController(object):
                     self.send_response(200)
                     self.send_header('Content-type', 'text/html')
                     self.end_headers()
-                    self.wfile.write(SENSOR_PAGE_HTML.format(websocket_host="'{}'".format(gethostbyname(gethostname())),
+                    self.wfile.write(SENSOR_PAGE_HTML.format(websocket_host="'{}'".format(controller._get_ip()),
                                                              websocket_port="'{}'".format(pypkjs_port)))
                 elif file_path in self.PERMITTED_PATHS:
                     try:
@@ -106,12 +106,17 @@ class BrowserController(object):
                                                                self.requestline, code, size))
 
         server = BaseHTTPServer.HTTPServer(('', self.port), SensorPageHandler)
-        url = "http://{}:{}".format(gethostbyname(gethostname()), server.server_port)
-        url_code = pyqrcode.create(url)
-        print(url_code.terminal(quiet_zone=1))
-        print("=======================================================================================================")
-        print("Please scan the QR code or enter the following URL in your mobile browser:\n{}".format(url))
-        print("=======================================================================================================")
+        try:
+            url = "http://{}:{}".format(self._get_ip(), server.server_port)
+            url_code = pyqrcode.create(url)
+            print(url_code.terminal(quiet_zone=1))
+            print("===================================================================================================")
+            print("Please scan the QR code or enter the following URL in your mobile browser:\n{}".format(url))
+            print("===================================================================================================")
+        except socket.error:
+            print("Unable to determine local IP address. Please browse to port {} on this machine from your mobile "
+                  "browser.".format(server.server_port))
+
         print("\nUse Ctrl-C to stop sending sensor data to the emulator.\n")
         try:
             server.serve_forever()
@@ -126,3 +131,11 @@ class BrowserController(object):
         addr, port = s.getsockname()
         s.close()
         return port
+
+    @classmethod
+    def _get_ip(cls):
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(('10.255.255.255', 1))
+        addr, port = s.getsockname()
+        s.close()
+        return addr

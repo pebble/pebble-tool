@@ -115,6 +115,14 @@ class SDKManager(object):
             subprocess.check_call([os.path.join(virtualenv_path, "bin", "python"), "-m", "pip", "install", "-r",
                                    os.path.join(path, "sdk-core", "requirements.txt")],
                                   env={'PYTHONHOME': virtualenv_path})
+            package_json = os.path.join(path, "sdk-core", "package.json")
+            if os.path.exists(package_json):
+                print("Installing JS dependencies... (this may take a while)")
+                node_modules_folder = os.path.join(path, "node_modules")
+                os.mkdir(node_modules_folder)
+                shutil.copy2(package_json, os.path.join(path, "package.json"))
+                subprocess.check_call(["npm", "install", "--silent"], cwd=path)
+
             self.set_current_sdk(sdk_info['version'])
             print("Done.")
         except Exception:
@@ -192,6 +200,7 @@ https://developer.getpebble.com/legal/sdk-license
         return config.get('sdk-channel', '')
 
     def make_tintin_sdk(self, path):
+        path = os.path.realpath(os.path.expanduser(path))
         dest_path = os.path.join(self.sdk_dir, 'tintin')
         if not os.path.exists(os.path.join(path, 'wscript')):
             raise SDKInstallError("No tintin found at {}".format(path))
@@ -201,6 +210,10 @@ https://developer.getpebble.com/legal/sdk-license
         sdk_path = os.path.join(build_path, 'sdk')
         os.mkdir(dest_path)
         env_path = os.path.join(dest_path, '.env')
+        if os.path.exists(os.path.join(sdk_path, 'package.json')):
+            shutil.copy2(os.path.join(sdk_path, 'package.json'), os.path.join(dest_path, 'package.json'))
+            node_modules_path = os.path.join(dest_path, 'node_modules')
+            os.mkdir(node_modules_path)
         dest_path = os.path.join(dest_path, 'sdk-core')
         os.mkdir(os.path.join(dest_path))
         pebble_path = os.path.join(dest_path, 'pebble')
@@ -246,6 +259,9 @@ subprocess.call([sys.executable, {}] + sys.argv[1:])
         subprocess.check_call([os.path.join(env_path, "bin", "python"), "-m", "pip", "install", "-r",
                                os.path.join(path, "requirements-{}.txt".format(platform))],
                               env={'PYTHONHOME': env_path, 'PATH': os.environ['PATH']})
+        if os.path.exists(os.path.join(dest_path, '..', 'node_modules')):
+            print("Installing JS dependencies... (this may take a while)")
+            subprocess.check_call(['npm', 'install'], cwd=os.path.join(dest_path, '..'))
 
         self.set_current_sdk('tintin')
         print("Generated an SDK linked to {}.".format(path))
@@ -275,7 +291,6 @@ subprocess.call([sys.executable, {}] + sys.argv[1:])
         if not os.path.exists(path):
             raise MissingSDK("SDK {} is not installed.".format(version))
         return path
-
 
     @staticmethod
     def parse_version(version_string):
