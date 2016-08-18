@@ -7,6 +7,12 @@ import logging
 import sys
 import requests.packages.urllib3 as urllib3
 
+from .exceptions import ToolError
+from .sdk import sdk_version
+from .util.analytics import wait_for_analytics, analytics_prompt
+from .util.config import config
+from .util.updates import wait_for_update_checks
+from .version import __version__, __version_info__
 
 # Violating PEP8 for custom command ordering for `pebble -h`
 from .commands.sdk import manage
@@ -17,13 +23,6 @@ from .commands import (install, logs, screenshot, timeline, emucontrol, ping, ac
                        transcription_server, data_logging)
 from .commands.sdk import create, emulator
 from .commands.sdk.project import package, analyse_size, convert, debug
-from .exceptions import ToolError
-from .sdk import sdk_version
-from .util.analytics import wait_for_analytics, analytics_prompt
-from .util.config import config
-from .util.updates import wait_for_update_checks
-from .version import __version__, __version_info__
-
 
 def run_tool(args=None):
     urllib3.disable_warnings()  # sigh. :(

@@ -15,6 +15,7 @@ import tempfile
 import tarfile
 
 from pebble_tool.exceptions import SDKInstallError, MissingSDK
+from pebble_tool.sdk.requirements import Requirements
 from pebble_tool.util import get_persist_dir
 from pebble_tool.util.config import config
 from pebble_tool.util.npm import invoke_npm
@@ -107,6 +108,7 @@ class SDKManager(object):
                         raise SDKInstallError("SDK contained a questionable file: {}".format(filename))
                 if not path.startswith(self.sdk_dir):
                     raise SDKInstallError("Suspicious version number: {}".format(sdk_info['version']))
+                Requirements(sdk_info['requirements']).ensure_satisfied()
                 os.mkdir(os.path.join(self.sdk_dir, sdk_info['version']))
                 t.extractall(path)
             virtualenv_path = os.path.join(path, ".env")
@@ -145,8 +147,7 @@ class SDKManager(object):
         if os.path.exists(path):
             raise SDKInstallError("SDK {} is already installed.".format(sdk_info['version']))
         # For now, we ignore this field aside from bailing if it has content.
-        if len(sdk_info['requirements']) > 0:
-            raise SDKInstallError("You need to update the pebble tool before installing this SDK.")
+        Requirements(sdk_info['requirements']).ensure_satisfied()
         self._license_prompt()
         self.install_from_url(sdk_info['url'])
 
