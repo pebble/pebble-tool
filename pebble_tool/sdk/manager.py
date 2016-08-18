@@ -17,6 +17,7 @@ import tarfile
 from pebble_tool.exceptions import SDKInstallError, MissingSDK
 from pebble_tool.util import get_persist_dir
 from pebble_tool.util.config import config
+from pebble_tool.util.npm import invoke_npm
 from pebble_tool.util.versions import version_to_key
 
 pebble_platforms = ('aplite', 'basalt', 'chalk', 'diorite')
@@ -121,7 +122,7 @@ class SDKManager(object):
                 node_modules_folder = os.path.join(path, "node_modules")
                 os.mkdir(node_modules_folder)
                 shutil.copy2(package_json, os.path.join(path, "package.json"))
-                subprocess.check_call(["npm", "install", "--silent"], cwd=path)
+                invoke_npm(["install", "--silent"], cwd=path)
 
             self.set_current_sdk(sdk_info['version'])
             print("Done.")
@@ -261,7 +262,7 @@ subprocess.call([sys.executable, {}] + sys.argv[1:])
                               env={'PYTHONHOME': env_path, 'PATH': os.environ['PATH']})
         if os.path.exists(os.path.join(dest_path, '..', 'node_modules')):
             print("Installing JS dependencies... (this may take a while)")
-            subprocess.check_call(['npm', 'install'], cwd=os.path.join(dest_path, '..'))
+            invoke_npm(["install", "--silent"], cwd=os.path.join(dest_path, '..'))
 
         self.set_current_sdk('tintin')
         print("Generated an SDK linked to {}.".format(path))

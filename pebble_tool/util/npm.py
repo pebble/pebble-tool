@@ -17,9 +17,9 @@ def check_npm():
         raise ToolError(u"You must have npm ≥ 3.0.0 available on your path.")
 
 
-def invoke_npm(args):
+def invoke_npm(args, cwd=None):
     check_npm()
-    subprocess.check_call(["npm"] + args)
+    subprocess.check_call(["npm"] + args, cwd=cwd)
 
 
 def sanity_check():
