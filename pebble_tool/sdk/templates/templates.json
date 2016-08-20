@@ -1,0 +1,44 @@
+{
+    "default": {
+        ".gitignore": "gitignore"
+    },
+    "rocky": {
+        "default": {
+            "src/pkjs/index.js": "rocky/app.js",
+            "src/rocky/index.js": "rocky/index.js",
+            "wscript": "rocky/wscript",
+            "package.json": "rocky/package.json"
+        }
+    },
+    "app": {
+        "default": {
+            "src/c/${project_name}.c": ["app/main.c", "main.c"],
+            "wscript": ["app/wscript", "wscript"],
+            "package.json": "app/package.json",
+            "resources": null
+        },
+        "appinfo": {
+            "appinfo.json": ["app/appinfo.json", "appinfo.json"]
+        },
+        "worker": {
+            "worker_src/c/${project_name}_worker.c": ["app/worker.c", "worker.c"]
+        },
+        "simple": {
+            "src/c/${project_name}.c": ["app/simple.c", "simple.c"]
+        },
+        "javascript": {
+            "src/pkjs/index.js": ["app/app.js", "app.js"]
+        }
+    },
+    "lib": {
+        "default": {
+            "src/c/${project_name}.c": "lib/lib.c",
+            "include/${project_name}.h": "lib/lib.h",
+            "wscript": "lib/wscript",
+            "src/resources": null
+        },
+        "javascript": {
+            "src/js/index.js": "lib/lib.js"
+        }
+    }
+}

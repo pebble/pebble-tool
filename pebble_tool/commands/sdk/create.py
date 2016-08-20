@@ -1,9 +1,11 @@
 from __future__ import absolute_import, print_function
 
 import errno
+import json
 import os
+import re
 
-from shutil import copy2
+import shutil
 from string import Template
 from uuid import uuid4
 
@@ -11,55 +13,114 @@ from . import SDKCommand
 from pebble_tool.sdk import SDK_VERSION, sdk_version
 from pebble_tool.exceptions import ToolError
 from pebble_tool.util.analytics import post_event
+from pebble_tool.util.versions import version_to_key
 
 
-def _copy_template(name, directory_list, appinfo_list, file_list, create_dir_list):
+def _mkdirs(path):
+    """
+    Like os.makedirs, but doesn't complain if they're already made.
+    :param path: Directories to make
+    :type path: str
+    :return:
+    """
+
     try:
-        project_path = name
-        project_name = os.path.split(project_path)[1]
-        project_root = os.path.join(os.getcwd(), project_path)
+        os.makedirs(os.path.dirname(path))
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+
+
+def extant_path(paths):
+    """
+    Returns the first path that exists, or None if no path does.
+    :param paths: List of paths to test, in order.
+    :type paths: Iterable[str]
+    :return: The first path that exists, or None
+    :rtype: str
+    """
+    for path in paths:
+        if os.path.exists(path):
+            return path
+
+    return None
+
+
+def _copy_from_template(template, template_root, path, options):
+    """
+    Given a description of a template and a pointer to the root that description uses,
+    instantiates a template at the given path, using the given options
+    :param template: The dictionary describing a template
+    :type template: dict[str, dict[str, str | list[str] | dict[str, dict[str, str | list[str]]]]]
+    :param template_root: The path to the root of the source files described by template
+    :type template_root: str
+    :param path: The path to the directory to create for the template.
+    :type path: str
+    :param options: The type of template to create
+    :type options: list[str]
+    """
+    project_path = path
+    project_name = os.path.split(project_path)[1]
+    project_root = os.path.join(os.getcwd(), project_path)
+    uuid = uuid4()
+
+    try:
         os.mkdir(project_path)
     except OSError as e:
         if e.errno == errno.EEXIST:
             raise ToolError("A directory called '{}' already exists.".format(project_name))
         raise
 
-    for directory in directory_list:
-        if os.path.exists(directory):
-            template_path = directory
-            break
-    else:
-        raise ToolError("Can't create that sort of project with the current SDK.")
+    def substitute(template_content):
+        return Template(template_content).substitute(uuid=str(uuid),
+                                                     project_name=project_name,
+                                                     display_name=project_name,
+                                                     project_name_c=re.sub(r'[^a-zA-Z0-9_]+', '_', project_name),
+                                                     sdk_version=SDK_VERSION)
 
-    for appinfo_path in appinfo_list:
-        appinfo_path = os.path.join(template_path, appinfo_path)
-        if os.path.exists(appinfo_path):
-            file_list.append((appinfo_path, os.path.join(project_root, os.path.basename(appinfo_path))))
-            break
-    else:
-        raise ToolError("Couldn't find an appinfo-like file.")
+    def copy_group(group, must_succeed=True):
+        """
+        Copies the files described by a subgroup of the main template definition.
+        :param group: The group to copy
+        :type group: dict[str, str | list[str] | dict[str, str | list[str]]]
+        :param must_succeed: If nothing is copied, and this is True, throw a ToolError.
+        :type must_succeed: bool
+        """
+        copied_files = 0
 
-    for file_path in file_list:
-        if isinstance(file_path, basestring):
-            origin_path = os.path.join(template_path, file_path)
-            target_path = os.path.join(project_root, file_path)
-        else:
-            origin_path = os.path.join(template_path, file_path[0])
-            target_path = os.path.join(project_root, file_path[1])
+        for dest, origins in group.iteritems():
+            target_path = os.path.join(substitute(project_root), dest)
+            if origins is None:
+                _mkdirs(target_path)
+                continue
 
-        if os.path.exists(origin_path):
-            try:
-                os.makedirs(os.path.dirname(target_path))
-            except OSError as e:
-                if e.errno != errno.EEXIST:
-                    raise
-            with open(origin_path) as f:
-                template = Template(f.read())
-            with open(target_path, 'w') as f:
-                f.write(template.substitute(uuid=str(uuid4()),
-                                            project_name=project_name,
-                                            display_name=project_name,
-                                            sdk_version=SDK_VERSION))
+            if isinstance(origins, basestring):
+                origins = [origins]
+
+            origin_path = extant_path(os.path.join(template_root, x) for x in origins)
+            if origin_path is not None:
+                copied_files += 1
+                try:
+                    os.makedirs(os.path.dirname(target_path))
+                except OSError as e:
+                    if e.errno != errno.EEXIST:
+                        raise
+                with open(origin_path) as f:
+                    template_content = f.read()
+                with open(substitute(target_path), 'w') as f:
+                    f.write(substitute(template_content))
+
+        if must_succeed and copied_files == 0:
+            raise ToolError("Can't create that sort of project with the current SDK.")
+
+    try:
+        copy_group(template.get('default', {}), must_succeed=False)
+        copy_group(template.get(options[0], {}).get('default', {}))
+        for option in options[1:]:
+            copy_group(template.get(options[0], {}).get(option, {}))
+    except Exception:
+        shutil.rmtree(project_root)
+        raise
 
 
 class NewProjectCommand(SDKCommand):
@@ -69,41 +130,38 @@ class NewProjectCommand(SDKCommand):
     def __call__(self, args):
         super(NewProjectCommand, self).__call__(args)
 
-        project_path = args.name
-        project_name = os.path.split(project_path)[1]
-        sdk2 = self.sdk == "2.9" or (self.sdk is None and sdk_version() == "2.9")
+        sdk = self.sdk or sdk_version()
+        sdk2 = (sdk == "2.9")
 
-        file_list = [('gitignore', '.gitignore')]
         if args.rocky:
             if sdk2:
                 raise ToolError("--rocky is not compatible with SDK 2.9")
             if args.simple or args.worker:
                 raise ToolError("--rocky is incompatible with --simple and --worker")
-            template_paths = [os.path.join(self.get_sdk_path(), 'pebble', 'common', 'templates', 'rocky')]
-            file_list.extend([
-                ('app.js', 'src/pkjs/index.js'),
-                ('index.js', 'src/rocky/index.js'),
-                ('wscript', 'wscript')
-            ])
+            options = ['rocky']
         else:
-            template_paths = [
-                os.path.join(self.get_sdk_path(), 'pebble', 'common', 'templates', 'app'),
-                os.path.join(self.get_sdk_path(), 'pebble', 'common', 'templates'),
-                os.path.join(os.path.dirname(__file__), '..', '..', 'sdk', 'templates')
-            ]
-            file_list.extend([
-                ('simple.c' if args.simple else 'main.c', 'src/c/{}.c'.format(project_name)),
-                ('wscript_sdk2' if sdk2 else 'wscript', 'wscript')
-            ])
-
+            options = ['app']
             if args.javascript:
-                file_list.extend([
-                    ('app.js', 'src/js/app.js'),
-                    ('pebble-js-app.js', 'src/js/pebble-js-app.js')])
+                options.append('javascript')
+            if args.simple:
+                options.append('simple')
             if args.worker:
-                file_list.append(('worker.c', 'worker_src/c/{}_worker.c'.format(project_name)))
+                options.append('worker')
 
-        _copy_template(args.name, template_paths, ['package.json', 'appinfo.json'], file_list, ['resources'])
+        # Hack for old SDKs that need an appinfo, because the declarative system can't
+        # handle "this, but only if not that."
+        if version_to_key(sdk) < (3, 13, 0):
+            options.append('appinfo')
+
+        template_paths = [
+            os.path.join(self.get_sdk_path(), 'pebble', 'common', 'templates'),
+            os.path.join(os.path.dirname(__file__), '..', '..', 'sdk', 'templates')
+        ]
+
+        with open(extant_path(os.path.join(x, "templates.json") for x in template_paths)) as f:
+            template_layout = json.load(f)
+
+        _copy_from_template(template_layout, extant_path(template_paths), args.name, options)
 
         post_event("sdk_create_project", javascript=args.javascript or args.rocky, worker=args.worker, rocky=args.rocky)
         print("Created new project {}".format(args.name))
@@ -130,23 +188,19 @@ class NewPackageCommand(SDKCommand):
     def __call__(self, args):
         super(NewPackageCommand, self).__call__(args)
 
-        package_path = args.name
-        package_name = os.path.split(package_path)[1]
+        template_path = os.path.join(self.get_sdk_path(), 'pebble', 'common', 'templates')
+        control_path = extant_path([
+            os.path.join(template_path, 'templates.json'),
+            os.path.join(os.path.dirname(__file__), '..', '..', 'sdk', 'templates', 'templates.json'),
+        ])
+        with open(control_path) as f:
+            template_layout = json.load(f)
 
-        template_paths = [
-            os.path.join(self.get_sdk_path(), 'pebble', 'common', 'templates', 'lib'),
-        ]
-        file_list = [
-            ('gitignore', '.gitignore'),
-            ('lib.c', 'src/c/{}.c'.format(package_name)),
-            ('lib.h', 'include/{}.h'.format(package_name)),
-            'wscript',
-        ]
-        dir_list = ['src/resources']
+        options = ["lib"]
         if args.javascript:
-            file_list.append(('lib.js', 'src/js/index.js'))
+            options.append("javascript")
 
-        _copy_template(args.name, template_paths, ['package.json'], file_list, dir_list)
+        _copy_from_template(template_layout, template_path, args.name, options)
 
         post_event("sdk_create_package", javascript=args.javascript)
         print("Created new package {}".format(args.name))
