@@ -89,7 +89,8 @@ class PblProjectConverter(SDKProjectCommand):
 
         wscript_path = os.path.join(project_root, "wscript")
 
-        wscript2_hash = hashlib.md5(open(os.path.join(project_template_path, 'wscript_sdk2')).read()).hexdigest()
+        wscript2_hash = hashlib.md5(open(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'sdk', 'templates',
+                                                      'wscript_sdk2')).read()).hexdigest()
         wscript3_hash = hashlib.md5(open(os.path.join(project_template_path, 'wscript')).read()).hexdigest()
         with open(wscript_path, "r") as f:
             current_hash = hashlib.md5(f.read()).hexdigest()
