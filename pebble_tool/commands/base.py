@@ -79,8 +79,14 @@ class PebbleCommand(BaseCommand):
     @classmethod
     def _shared_parser(cls):
         parser = argparse.ArgumentParser(add_help=False)
-        group = parser.add_mutually_exclusive_group()
-        for handler_impl in cls.valid_connection_handlers():
+        handlers = cls.valid_connection_handlers()
+        # Having a group inside a mutually exclusive group breaks --help unless there are is
+        # something for it to be mutually exlusive with.
+        if len(handlers) > 1:
+            group = parser.add_mutually_exclusive_group()
+        else:
+            group = parser
+        for handler_impl in handlers:
             handler_impl.add_argument_handler(group)
         return super(PebbleCommand, cls)._shared_parser() + [parser]
 
