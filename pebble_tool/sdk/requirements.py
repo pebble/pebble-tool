@@ -54,7 +54,7 @@ class Requirements(object):
         if 'qemu' not in self._version_cache:
             qemu_path = os.environ.get('PEBBLE_QEMU_PATH', 'qemu-pebble')
             try:
-                result = subprocess.check_output([qemu_path, '--version'])
+                result = subprocess.check_output([qemu_path, '--version'], stderr=subprocess.STDOUT)
             except (subprocess.CalledProcessError, OSError):
                 version = None
             else:
@@ -70,7 +70,7 @@ class Requirements(object):
         if 'pypkjs' not in self._version_cache:
             pypkjs_path = os.environ.get('PHONESIM_PATH', 'phonesim.py')
             try:
-                result = subprocess.check_output([sys.executable, pypkjs_path, '--version'])
+                result = subprocess.check_output([sys.executable, pypkjs_path, '--version'], stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError:
                 version = '1.0.4'  # The version before we started including version numbers.
             except OSError:
