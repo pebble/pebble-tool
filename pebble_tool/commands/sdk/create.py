@@ -100,11 +100,7 @@ def _copy_from_template(template, template_root, path, options):
             origin_path = extant_path(os.path.join(template_root, x) for x in origins)
             if origin_path is not None:
                 copied_files += 1
-                try:
-                    os.makedirs(os.path.dirname(target_path))
-                except OSError as e:
-                    if e.errno != errno.EEXIST:
-                        raise
+                _mkdirs(target_path)
                 with open(origin_path) as f:
                     template_content = f.read()
                 with open(substitute(target_path), 'w') as f:
