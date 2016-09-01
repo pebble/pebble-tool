@@ -49,6 +49,11 @@ class PebbleProject(object):
                 or not os.path.exists(os.path.join(self.project_dir, 'wscript')):
             raise OutdatedProjectException("This project is very outdated, and cannot be handled by this SDK.")
 
+        if int(self.sdk_version) > 3:
+            raise PebbleProjectException("An invalid value of '{}' was found in the 'sdkVersion' field of the "
+                                         "project's package.json. The latest supported value for this field is {}.".
+                                         format(self.sdk_version, SDK_VERSION))
+
         if self.sdk_version != SDK_VERSION:
             if sdk_version() != '2.9':
                 raise OutdatedProjectException("This projected is outdated (try 'pebble convert-project' or"
