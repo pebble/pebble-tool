@@ -27,6 +27,7 @@ class PblProjectConverter(SDKProjectCommand):
                 print("No conversion required")
         except OutdatedProjectException:
             self._convert_project()
+            super(PblProjectConverter, self).__call__(args)
             self._convert_to_npm()
             print("Project successfully converted!")
 
@@ -82,8 +83,7 @@ class PblProjectConverter(SDKProjectCommand):
     def _convert_project(self):
         project_root = os.getcwd()
         project_template_path = os.path.join(self.get_sdk_path(), 'pebble', 'common', 'templates')
-        if not os.path.exists(project_template_path):
-            project_template_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'sdk', 'templates')
+        tool_project_template_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'sdk', 'templates')
 
         self._generate_appinfo_from_old_project(project_root)
 
@@ -93,7 +93,10 @@ class PblProjectConverter(SDKProjectCommand):
         os.rename(wscript_path, wscript_path + '.backup')
 
         print('Generating new 3.x wscript')
-        copy2(os.path.join(project_template_path, 'wscript'), wscript_path)
+        try:
+            copy2(os.path.join(project_template_path, 'wscript'), wscript_path)
+        except IOError:
+            copy2(os.path.join(tool_project_template_path, 'wscript'), wscript_path)
         os.system('pebble clean')
 
     @classmethod
