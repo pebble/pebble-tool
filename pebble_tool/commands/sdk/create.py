@@ -126,6 +126,11 @@ class NewProjectCommand(SDKCommand):
     def __call__(self, args):
         super(NewProjectCommand, self).__call__(args)
 
+        template_paths = [
+            os.path.join(self.get_sdk_path(), 'pebble', 'common', 'templates'),
+            os.path.join(os.path.dirname(__file__), '..', '..', 'sdk', 'templates')
+        ]
+
         sdk = self.sdk or sdk_version()
         sdk2 = (sdk == "2.9")
 
@@ -148,11 +153,6 @@ class NewProjectCommand(SDKCommand):
         # handle "this, but only if not that."
         if version_to_key(sdk) < (3, 13, 0):
             options.append('appinfo')
-
-        template_paths = [
-            os.path.join(self.get_sdk_path(), 'pebble', 'common', 'templates'),
-            os.path.join(os.path.dirname(__file__), '..', '..', 'sdk', 'templates')
-        ]
 
         with open(extant_path(os.path.join(x, "templates.json") for x in template_paths)) as f:
             template_layout = json.load(f)
