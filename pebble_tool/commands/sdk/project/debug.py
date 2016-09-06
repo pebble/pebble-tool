@@ -8,9 +8,14 @@ import os
 import signal
 import subprocess
 
+from libpebble2.exceptions import TimeoutError
+from libpebble2.protocol.apps import AppRunState, AppRunStateRequest, AppRunStateStart
+
 from pebble_tool.commands.base import PebbleCommand
+from pebble_tool.commands.install import ToolAppInstaller
 from pebble_tool.sdk import sdk_manager, add_tools_to_path
 from pebble_tool.sdk.emulator import ManagedEmulatorTransport
+from pebble_tool.sdk.project import PebbleProject
 from pebble_tool.exceptions import ToolError
 
 
@@ -61,11 +66,42 @@ class GdbCommand(PebbleCommand):
                     if section != '.text']
         return ' '.join(command)
 
+    def _ensure_correct_app(self, try_install=True):
+        project = PebbleProject()
+        if project.project_type != 'native':
+            raise ToolError("Only native apps can be debugged using gdb.")
+
+        current_app_uuid = self.pebble.send_and_read(AppRunState(data=AppRunStateRequest()), AppRunState).data.uuid
+        if current_app_uuid != project.uuid:
+            print("Launching {}...".format(project.long_name))
+            # Try launching the app we want. This just does nothing if the app doesn't exist.
+            # Edge case: the app exists in blobdb but isn't installed. This shouldn't come up with the pebble tool.
+            queue = self.pebble.get_endpoint_queue(AppRunState)
+            try:
+                self.pebble.send_packet(AppRunState(data=AppRunStateStart(uuid=project.uuid)))
+                while True:
+                    packet = queue.get(timeout=0.5)
+                    if isinstance(packet.data, AppRunStateStart) and packet.data.uuid == project.uuid:
+                        break
+            except TimeoutError:
+                if try_install:
+                    print("App did not launch. Trying to install it...")
+                    try:
+                        ToolAppInstaller(self.pebble).install()
+                    except IOError:
+                        raise ToolError("The app to debug must be built and installed on the watch.")
+                    self._ensure_correct_app(try_install=False)
+                else:
+                    raise ToolError("The app to debug must be running on the watch to start gdb.")
+            finally:
+                queue.close()
+
     def __call__(self, args):
         super(GdbCommand, self).__call__(args)
         # We poke around in the ManagedEmulatorTransport, so it's important that we actually have one.
         # Just asserting is okay because this should already be enforced by valid_connections.
         assert isinstance(self.pebble.transport, ManagedEmulatorTransport)
+        self._ensure_correct_app()
         add_tools_to_path()
 
         platform = self.pebble.transport.platform
