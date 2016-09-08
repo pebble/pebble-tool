@@ -1,6 +1,9 @@
+from __future__ import print_function
+
 __author__ = 'katharine'
 
 import json
+from jsonschema import validate, ValidationError
 import os
 import os.path
 import uuid
@@ -9,7 +12,7 @@ SDK_VERSION = "3"
 
 from pebble_tool.exceptions import (InvalidProjectException, InvalidJSONException, OutdatedProjectException,
                                     PebbleProjectException)
-from pebble_tool.sdk import sdk_version
+from pebble_tool.sdk import sdk_version, sdk_path
 from . import pebble_platforms
 
 
@@ -59,34 +62,16 @@ class PebbleProject(object):
 
     @staticmethod
     def check_project_directory(project_dir):
-        try:
-            NpmProject.check_project_directory(project_dir)
-        except PebbleProjectException:
-            AppinfoProject.check_project_directory(project_dir)
+        _validate_project_json(project_dir)
+        if not os.path.isdir(os.path.join(project_dir, 'src')):
+            raise InvalidProjectException("This is not a project directory.")
+        if not os.path.exists(os.path.join(project_dir, 'wscript')):
+            raise OutdatedProjectException("This project is missing a wscript file and cannot be handled by the SDK.")
 
 
 class AppinfoProject(PebbleProject):
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls, *args, **kwargs)
-
-    @staticmethod
-    def check_project_directory(project_dir):
-        """Check to see if the current directory matches what is created by PblProjectCreator.run.
-
-        Raises an InvalidProjectException or an OutdatedProjectException if everything isn't quite right.
-        """
-
-        if not os.path.isdir(os.path.join(project_dir, 'src')):
-            raise InvalidProjectException("This is not a project directory.")
-
-        try:
-            with open(os.path.join(project_dir, "appinfo.json"), "r") as f:
-                try:
-                    json.load(f)
-                except ValueError as e:
-                    raise InvalidJSONException("Could not parse appinfo.json: %s" % e)
-        except IOError:
-            raise InvalidProjectException("Couldn't open project info.")
 
     @staticmethod
     def should_process(project_dir):
@@ -121,35 +106,13 @@ class NpmProject(PebbleProject):
         return object.__new__(cls, *args, **kwargs)
 
     @staticmethod
-    def check_project_directory(project_dir):
-        """Check to see if the current directory matches what is created by PblProjectCreator.run.
-
-        Raises an InvalidProjectException or an OutdatedProjectException if everything isn't quite right.
-        """
-
-        try:
-            with open(os.path.join(project_dir, "package.json"), "r") as f:
-                try:
-                    app_info = json.load(f)
-                except ValueError as e:
-                    raise InvalidJSONException("Could not parse package.json: %s" % ex)
-                if 'pebble' not in app_info:
-                    raise InvalidProjectException("package.json doesn't have a 'pebble' key.")
-        except IOError:
-            if not os.path.isdir(os.path.join(project_dir, 'src')):
-                raise InvalidProjectException("This is not a project directory.")
-            raise InvalidProjectException("Couldn't open project info.")
-
-    @staticmethod
     def should_process(project_dir):
+        _validate_project_json(project_dir)
         package_json_path = os.path.join(project_dir, 'package.json')
         if os.path.exists(package_json_path):
-            with open(package_json_path) as f:
-                try:
-                    if 'pebble' in json.load(f):
-                        return True
-                except ValueError:
-                    return False
+            with open(os.path.join(project_dir, 'package.json')) as f:
+                if 'pebble' in json.load(f):
+                    return True
         return False
 
     def _parse_project(self):
@@ -185,6 +148,49 @@ class NpmProject(PebbleProject):
             self.is_hidden = False
             self.is_shown_only_on_communication = False
             self.long_name = self.short_name
+
+
+def _validate_project_json(project_dir):
+    package_json_path = os.path.join(project_dir, 'package.json')
+    appinfo_json_path = os.path.join(project_dir, 'appinfo.json')
+
+    try:
+        with open(package_json_path, 'r') as f:
+            try:
+                info = json.load(f)
+            except ValueError as e:
+                raise InvalidJSONException("package.json file does not contain valid JSON:\n{}".format(e))
+            else:
+                if 'pebble' not in info:
+                    raise IOError
+    except IOError:
+        try:
+            with open(appinfo_json_path, 'r') as f:
+                try:
+                    info = json.load(f)
+                except ValueError as e:
+                    raise InvalidJSONException("appinfo.json file does not contain valid JSON:\n{}".format(e))
+        except IOError:
+            raise InvalidProjectException("Unable to find package.json file.")
+        else:
+            _validate_with_schema(info, "appinfo.json")
+    else:
+        _validate_with_schema(info, "package.json")
+
+
+def _validate_with_schema(json_info, filetype):
+    try:
+        validate(json_info, _get_json_schema(filetype))
+    except ValidationError as e:
+        raise InvalidJSONException(e)
+
+
+def _get_json_schema(json_filetype):
+    schema_path = os.path.join(sdk_path(), 'pebble', 'common', 'tools', 'schemas', json_filetype)
+    if os.path.exists(schema_path):
+        with open(schema_path, "r") as f:
+            return json.load(f)
+    return {}
 
 
 def check_current_directory():
