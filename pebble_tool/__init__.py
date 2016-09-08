@@ -12,6 +12,7 @@ from .sdk import sdk_version
 from .util.analytics import wait_for_analytics, analytics_prompt
 from .util.config import config
 from .util.updates import wait_for_update_checks
+from .util.wsl import maybe_apply_wsl_hacks
 from .version import __version__, __version_info__
 
 # Violating PEP8 for custom command ordering for `pebble -h`
@@ -27,6 +28,7 @@ from .commands.sdk.project import package, analyse_size, convert, debug
 def run_tool(args=None):
     urllib3.disable_warnings()  # sigh. :(
     logging.basicConfig()
+    maybe_apply_wsl_hacks()
     analytics_prompt()
     parser = argparse.ArgumentParser(description="Pebble Tool", prog="pebble",
                                      epilog="For help on an individual command, call that command with --help.")
