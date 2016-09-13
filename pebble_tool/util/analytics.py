@@ -20,6 +20,7 @@ from pebble_tool.account import get_default_account
 from pebble_tool.sdk.project import PebbleProject
 from pebble_tool.exceptions import MissingSDK, PebbleProjectException
 from pebble_tool.sdk import sdk_path, sdk_version, get_persist_dir
+from pebble_tool.util.wsl import is_secretly_windows
 from pebble_tool.version import __version__
 
 logger = logging.getLogger("pebble_tool.util.analytics")
@@ -176,6 +177,7 @@ class PebbleAnalytics(threading.Thread):
         return {
             'platform': platform.platform(),
             'is_vm': self._is_running_in_vm(),
+            'is_wsl': is_secretly_windows(),
             'python_version': platform.python_version(),
         }
 
