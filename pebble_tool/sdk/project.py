@@ -3,7 +3,7 @@ from __future__ import print_function
 __author__ = 'katharine'
 
 import json
-from jsonschema import validate, ValidationError
+from jsonschema import Draft4Validator, RefResolver, ValidationError
 import os
 import os.path
 import uuid
@@ -180,17 +180,18 @@ def _validate_project_json(project_dir):
 
 def _validate_with_schema(json_info, filetype):
     try:
-        validate(json_info, _get_json_schema(filetype))
+        _get_json_schema_validator(filetype).validate(json_info)
     except ValidationError as e:
         raise InvalidJSONException(e)
 
 
-def _get_json_schema(json_filetype):
+def _get_json_schema_validator(json_filetype):
     schema_path = os.path.join(sdk_path(), 'pebble', 'common', 'tools', 'schemas', json_filetype)
     if os.path.exists(schema_path):
+        resolver = RefResolver('file://' + os.path.dirname(schema_path) + '/', os.path.basename(schema_path))
         with open(schema_path, "r") as f:
-            return json.load(f)
-    return {}
+            return Draft4Validator(json.load(f), resolver=resolver)
+    return Draft4Validator({})
 
 
 def check_current_directory():
