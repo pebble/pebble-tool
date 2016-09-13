@@ -182,7 +182,14 @@ def _validate_with_schema(json_info, filetype):
     try:
         _get_json_schema_validator(filetype).validate(json_info)
     except ValidationError as e:
-        raise InvalidJSONException(e)
+        error_message = "Unable to validate {} due to one of the following reasons:\n".format(filetype)
+        for error in [e] + e.context:
+            if error.absolute_path:
+                absolute_path = '.'.join([str(path) for path in list(error.absolute_path)])
+                error_message += "- {}: {}\n".format(absolute_path, error.message)
+            else:
+                error_message += "- {}\n".format(error.message)
+        raise InvalidJSONException(error_message)
 
 
 def _get_json_schema_validator(json_filetype):
