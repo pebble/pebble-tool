@@ -21,6 +21,12 @@ class BrowserController(object):
     def open_config_page(self, url, callback):
         self.port = port = self._choose_port()
         url = self.url_append_params(url, {'return_to': 'http://localhost:{}/close?'.format(port)})
+        if not url.startswith('file'):
+            filename = '/tmp/config.%s.html' % os.getpid()
+            temp = open(filename, 'w+b')
+            temp.write('<head><meta http-equiv="refresh" content="0;URL={}"></head>'.format(url))
+            temp.close()
+            url = "file://{}".format(filename)
         webbrowser.open_new(url)
         self.serve_page(port, callback)
 
