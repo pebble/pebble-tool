@@ -198,6 +198,11 @@ class ManagedEmulatorTransport(WebsocketTransport):
         ]
 
         platform_args = {
+            'emery': [
+                '-machine', 'pebble-robert-bb',
+                '-cpu', 'cortex-m4',
+                '-pflash', qemu_spi_flash,
+            ],
             'diorite': [
                 '-machine', 'pebble-silk-bb',
                 '-cpu', 'cortex-m4',
