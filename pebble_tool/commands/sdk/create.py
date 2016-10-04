@@ -151,7 +151,7 @@ class NewProjectCommand(SDKCommand):
 
         # Hack for old SDKs that need an appinfo, because the declarative system can't
         # handle "this, but only if not that."
-        if version_to_key(sdk) < (3, 13, 0):
+        if sdk != 'tintin' and version_to_key(sdk) < (3, 13, 0):
             options.append('appinfo')
 
         with open(extant_path(os.path.join(x, "templates.json") for x in template_paths)) as f:

@@ -240,6 +240,9 @@ subprocess.call([sys.executable, {}] + sys.argv[1:])
             os.symlink(os.path.join(build_path, 'qemu_spi_flash.bin'),
                        os.path.join(pebble_path, platform, 'qemu', 'qemu_spi_flash.bin'))
 
+        os.symlink(os.path.join(sdk_path, 'common/'), 
+                   os.path.join(pebble_path, 'common'))
+
         with open(os.path.join(dest_path, 'manifest.json'), 'w') as f:
             json.dump({
                 'requirements': [],
