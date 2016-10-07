@@ -150,8 +150,11 @@ class NewProjectCommand(SDKCommand):
                 options.append('worker')
 
         # Hack for old SDKs that need an appinfo, because the declarative system can't
-        # handle "this, but only if not that."
-        if version_to_key(sdk) < (3, 13, 0):
+        # handle "this, but only if not that." For "tintin" SDKs and unparseble
+        # versions, assume this hack is not needed.
+        version_number = version_to_key(sdk)
+        if version_number[:5] != (0, 0, 0, 0, 0) and \
+           version_number < (3, 13, 0):
             options.append('appinfo')
 
         with open(extant_path(os.path.join(x, "templates.json") for x in template_paths)) as f:
