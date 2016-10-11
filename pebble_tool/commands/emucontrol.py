@@ -292,3 +292,33 @@ class EmuSetTimelinePeekCommand(PebbleCommand):
     def add_parser(cls, parser):
         parser = super(EmuSetTimelinePeekCommand, cls).add_parser(parser)
         parser.add_argument('state', choices=['on', 'off'], help="Set whether a timeline quick view is visible.")
+
+
+class EmuSetContentSizeCommand(PebbleCommand):
+    command = 'emu-set-content-size'
+    valid_connections = {'qemu', 'emulator'}
+
+    def __call__(self, args):
+        super(EmuSetContentSizeCommand, self).__call__(args)
+        sizes = {
+            'small': QemuContentSize.ContentSize.Small,
+            'medium': QemuContentSize.ContentSize.Medium,
+            'large': QemuContentSize.ContentSize.Large,
+            'x-large': QemuContentSize.ContentSize.ExtraLarge,
+        }
+        if self.pebble.firmware_version < (4, 2, 0):
+            raise ToolError("Content size is only supported by firmware version 4.2 or later.")
+        if isinstance(self.pebble.transport, ManagedEmulatorTransport):
+            platform = self.pebble.transport.platform
+            if platform == 'emery':
+                if args.size == 'small':
+                    raise ToolError("Emery does not support the 'small' content size.")
+            else:
+                if args.size == 'x-large':
+                    raise ToolError("Only Emery supports the 'x-large' content size.")
+        send_data_to_qemu(self.pebble.transport, QemuContentSize(size=sizes[args.size]))
+
+    @classmethod
+    def add_parser(cls, parser):
+        parser = super(EmuSetContentSizeCommand, cls).add_parser(parser)
+        parser.add_argument('size', choices=['small', 'medium', 'large', 'x-large'], help="Set the content size.")
