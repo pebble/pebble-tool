@@ -78,7 +78,7 @@ class PebbleLogPrinter(object):
         def sourcemap_replacer(matchobj):
             d = matchobj.groupdict()
             line = int(d['line'])
-            column = int(d['column']) if 'column' in d else 0
+            column = int(d['column']) if d['column'] is not None else 0
             try:
                 token = self.sourcemap.lookup(line - 1, column)  # sourcemap wants zero-based lines numbers!
                 return u"{}:{}:{}".format(token.src, token.src_line + 1, token.src_col)
