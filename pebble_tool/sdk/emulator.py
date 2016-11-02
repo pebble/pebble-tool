@@ -196,6 +196,8 @@ class ManagedEmulatorTransport(WebsocketTransport):
             "-pflash", qemu_micro_flash,
             "-gdb", "tcp::{},server,nowait".format(self.qemu_gdb_port),
         ]
+        qemu_opts = os.environ.get('PEBBLE_QEMU_OPTS', '').split(' ')
+        command.extend(qemu_opts)
 
         platform_args = {
             'emery': [
