@@ -9,6 +9,7 @@ import re
 import subprocess
 import time
 import uuid
+import sourcemap
 import sys
 
 from collections import OrderedDict
@@ -20,6 +21,7 @@ from pebble_tool.exceptions import PebbleProjectException
 from pebble_tool.sdk import add_tools_to_path
 from pebble_tool.sdk.project import PebbleProject
 from colorama import Fore, Back, Style
+from sourcemap.exceptions import SourceMapDecodeError
 
 
 logger = logging.getLogger("pebble_tool.util.logs")
@@ -55,7 +57,40 @@ class PebbleLogPrinter(object):
                                                                self.handle_phone_log))
         self.handles.append(pebble.register_transport_endpoint(MessageTargetPhone, WebSocketConnectionStatusUpdate,
                                                                self.handle_connection))
+        self.sourcemap = self._load_js_sourcemap()
         add_tools_to_path()
+
+    def _load_js_sourcemap(self):
+        sourcemap_path = "build/pebble-js-app.js.map"
+        if not os.path.exists(sourcemap_path):
+            return None
+        with open(sourcemap_path) as sourcemap_file:
+            try:
+                return sourcemap.load(sourcemap_file)
+            except SourceMapDecodeError as e:
+                logger.warning('Found %s, but failed to parse it: %s', sourcemap_path, str(e))
+                return None
+
+    def _sourcemap_translate_js_log(self, logstr):
+        if not self.sourcemap:
+            return logstr
+
+        def sourcemap_replacer(matchobj):
+            d = matchobj.groupdict()
+            line = int(d['line'])
+            column = int(d['column']) if d['column'] is not None else 0
+            try:
+                token = self.sourcemap.lookup(line - 1, column)  # sourcemap wants zero-based lines numbers!
+                return u"{}:{}:{}".format(token.src, token.src_line + 1, token.src_col)
+            except IndexError:
+                return u"???:?:?"
+
+        try:
+            return re.sub(r"(:?file://[\w\/\.-]+)?pebble-js-app\.js((:?\:)(?P<line>\d+))((:?\:)(?P<column>\d+))?",
+                          sourcemap_replacer, logstr, flags=re.MULTILINE)
+        except IndexError:
+            return logstr
+
 
     def _print(self, packet, message):
         colour = self._get_colour(packet)
@@ -101,8 +136,8 @@ class PebbleLogPrinter(object):
 
     def handle_phone_log(self, packet):
         assert isinstance(packet, WebSocketPhoneAppLog)
-        self._print(packet, u"[{}] pkjs> {}".format(datetime.now().strftime("%H:%M:%S"),
-                                                         packet.payload))
+        logstr = self._sourcemap_translate_js_log(packet.payload)
+        self._print(packet, u"[{}] pkjs> {}".format(datetime.now().strftime("%H:%M:%S"), logstr))
 
     def handle_connection(self, packet):
         assert isinstance(packet, WebSocketConnectionStatusUpdate)
