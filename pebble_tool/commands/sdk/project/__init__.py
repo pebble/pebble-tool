@@ -47,7 +47,7 @@ class SDKProjectCommand(SDKCommand):
             event_map = {
                 InvalidProjectException: "sdk_run_without_project",
                 InvalidJSONException: "sdk_json_error",
-                OutdatedProjectException: "sdk_json_error",
+                OutdatedProjectException: "sdk_outdated_project",
             }
             if type(e) in event_map:
                 post_event(event_map[type(e)])
