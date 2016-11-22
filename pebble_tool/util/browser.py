@@ -36,7 +36,8 @@ class BrowserController(object):
                     self.end_headers()
                     self.wfile.write("OK")
                     running[0] = False
-                    callback(query)
+                    decoded_query = urlparse.unquote(query)
+                    callback(decoded_query)
                 else:
                     self.send_response(404)
                     self.end_headers()
