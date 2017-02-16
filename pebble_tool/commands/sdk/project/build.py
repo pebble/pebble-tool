@@ -7,7 +7,6 @@ import subprocess
 import time
 
 from pebble_tool.exceptions import BuildError
-from pebble_tool.util.analytics import post_event
 import pebble_tool.util.npm as npm
 from pebble_tool.commands.sdk.project import SDKProjectCommand
 
@@ -20,12 +19,10 @@ class BuildCommand(SDKProjectCommand):
         super(BuildCommand, self).__call__(args)
         start_time = time.time()
         if len(self.project.dependencies) > 0:
-            post_event('app_build_with_npm_deps')
             try:
                 npm.invoke_npm(["install"])
                 npm.invoke_npm(["dedupe"])
             except subprocess.CalledProcessError:
-                post_event("app_build_failed_npm")
                 raise BuildError("npm failed.")
         try:
             waf = list(args.args)
@@ -39,13 +36,7 @@ class BuildCommand(SDKProjectCommand):
             self._waf("configure", extra_env=extra_env, args=waf)
             self._waf("build", args=waf)
         except subprocess.CalledProcessError:
-            duration = time.time() - start_time
-            post_event("app_build_failed", build_time=duration)
             raise BuildError("Build failed.")
-        else:
-            duration = time.time() - start_time
-            has_js = os.path.exists(os.path.join('src', 'js'))
-            post_event("app_build_succeeded", has_js=has_js, line_counts=self._get_line_counts(), build_time=duration)
 
     @classmethod
     def _get_line_counts(cls):

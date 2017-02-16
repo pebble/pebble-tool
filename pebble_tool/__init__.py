@@ -9,7 +9,6 @@ import requests.packages.urllib3 as urllib3
 
 from .exceptions import ToolError
 from .sdk import sdk_version
-from .util.analytics import wait_for_analytics, analytics_prompt
 from .util.config import config
 from .util.updates import wait_for_update_checks
 from .util.wsl import maybe_apply_wsl_hacks
@@ -29,7 +28,6 @@ def run_tool(args=None):
     urllib3.disable_warnings()  # sigh. :(
     logging.basicConfig()
     maybe_apply_wsl_hacks()
-    analytics_prompt()
     parser = argparse.ArgumentParser(description="Pebble Tool", prog="pebble",
                                      epilog="For help on an individual command, call that command with --help.")
     version_string = "Pebble Tool v{}".format(__version__)
@@ -49,9 +47,5 @@ def run_tool(args=None):
 
 @atexit.register
 def wait_for_cleanup():
-    import time
-    now = time.time()
-    wait_for_analytics(2)
     wait_for_update_checks(2)
-    logging.info("Spent %f seconds waiting for analytics.", time.time() - now)
     config.save()

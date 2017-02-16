@@ -12,7 +12,6 @@ from uuid import uuid4
 from . import SDKCommand
 from pebble_tool.sdk import SDK_VERSION, sdk_version
 from pebble_tool.exceptions import ToolError
-from pebble_tool.util.analytics import post_event
 from pebble_tool.util.versions import version_to_key
 
 
@@ -162,7 +161,6 @@ class NewProjectCommand(SDKCommand):
 
         _copy_from_template(template_layout, extant_path(template_paths), args.name, options)
 
-        post_event("sdk_create_project", javascript=args.javascript or args.rocky, worker=args.worker, rocky=args.rocky)
         print("Created new project {}".format(args.name))
 
     @classmethod
@@ -201,7 +199,6 @@ class NewPackageCommand(SDKCommand):
 
         _copy_from_template(template_layout, template_path, args.name, options)
 
-        post_event("sdk_create_package", javascript=args.javascript)
         print("Created new package {}".format(args.name))
 
     @classmethod

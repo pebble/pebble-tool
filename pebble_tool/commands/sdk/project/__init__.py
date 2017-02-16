@@ -8,7 +8,6 @@ import logging
 from pebble_tool.exceptions import (PebbleProjectException, InvalidJSONException, InvalidProjectException,
                                     OutdatedProjectException)
 from pebble_tool.sdk.project import PebbleProject
-from pebble_tool.util.analytics import post_event
 from pebble_tool.commands.sdk import SDKCommand
 
 logger = logging.getLogger("pebble_tool.commands.sdk")
@@ -41,14 +40,4 @@ class SDKProjectCommand(SDKCommand):
 
     def __call__(self, args):
         super(SDKProjectCommand, self).__call__(args)
-        try:
-            self.project = PebbleProject()
-        except PebbleProjectException as e:
-            event_map = {
-                InvalidProjectException: "sdk_run_without_project",
-                InvalidJSONException: "sdk_json_error",
-                OutdatedProjectException: "sdk_json_error",
-            }
-            if type(e) in event_map:
-                post_event(event_map[type(e)])
-            raise
+        self.project = PebbleProject()
