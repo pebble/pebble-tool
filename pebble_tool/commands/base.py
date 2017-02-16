@@ -18,7 +18,6 @@ from pebble_tool.exceptions import ToolError
 from pebble_tool.sdk import pebble_platforms, sdk_version
 from pebble_tool.sdk.emulator import ManagedEmulatorTransport, get_all_emulator_info
 from pebble_tool.sdk.cloudpebble import CloudPebbleTransport
-from pebble_tool.util.analytics import post_event
 
 _CommandRegistry = []
 
@@ -55,7 +54,6 @@ class BaseCommand(with_metaclass(SelfRegisteringCommand)):
 
     def __call__(self, args):
         self._set_debugging(args.v)
-        post_event("invoke_command_{}".format(self.command))
 
     def _set_debugging(self, level):
         self._verbosity = level
